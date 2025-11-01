@@ -1,0 +1,26 @@
+{
+  "name": "documentdb-failover-test",
+  "version": "1.0.0",
+  "description": "Exemplo de aplicação Node.js resiliente a failover do DocumentDB",
+  "main": "connection-failover.js",
+  "scripts": {
+    "start": "node connection-failover.js",
+    "simple": "node connection-failover.js simple",
+    "test": "node connection-failover.js test"
+  },
+  "keywords": [
+    "documentdb",
+    "mongodb",
+    "failover",
+    "aws",
+    "resilience"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "mongodb": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

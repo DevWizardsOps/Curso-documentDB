@@ -1,0 +1,182 @@
+{
+  "BackupPlan": {
+    "BackupPlanName": "DocumentDB-Daily-Backup-Plan",
+    "Rules": [
+      {
+        "RuleName": "DailyBackups",
+        "TargetBackupVault": "Default",
+        "ScheduleExpression": "cron(0 3 * * ? *)",
+        "StartWindowMinutes": 60,
+        "CompletionWindowMinutes": 120,
+        "Lifecycle": {
+          "DeleteAfterDays": 7,
+          "MoveToColdStorageAfterDays": null
+        },
+        "RecoveryPointTags": {
+          "BackupType": "Automated",
+          "Environment": "Lab",
+          "Compliance": "Daily"
+        },
+        "CopyActions": []
+      },
+      {
+        "RuleName": "WeeklyBackups",
+        "TargetBackupVault": "Default",
+        "ScheduleExpression": "cron(0 4 ? * SUN *)",
+        "StartWindowMinutes": 60,
+        "CompletionWindowMinutes": 180,
+        "Lifecycle": {
+          "DeleteAfterDays": 30,
+          "MoveToColdStorageAfterDays": null
+        },
+        "RecoveryPointTags": {
+          "BackupType": "Weekly",
+          "Environment": "Lab",
+          "Compliance": "Weekly"
+        },
+        "CopyActions": []
+      },
+      {
+        "RuleName": "MonthlyBackups",
+        "TargetBackupVault": "Default",
+        "ScheduleExpression": "cron(0 5 1 * ? *)",
+        "StartWindowMinutes": 60,
+        "CompletionWindowMinutes": 240,
+        "Lifecycle": {
+          "DeleteAfterDays": 365,
+          "MoveToColdStorageAfterDays": 90
+        },
+        "RecoveryPointTags": {
+          "BackupType": "Monthly",
+          "Environment": "Lab",
+          "Compliance": "Monthly",
+          "Retention": "1-Year"
+        },
+        "CopyActions": []
+      }
+    ]
+  },
+  "BackupSelection": {
+    "SelectionName": "DocumentDB-Clusters-Selection",
+    "IamRoleArn": "arn:aws:iam::ACCOUNT_ID:role/service-role/AWSBackupDefaultServiceRole",
+    "Resources": [
+      "arn:aws:rds:us-east-1:ACCOUNT_ID:cluster:lab-cluster-*"
+    ],
+    "ListOfTags": [
+      {
+        "ConditionType": "STRINGEQUALS",
+        "ConditionKey": "Environment",
+        "ConditionValue": "Lab"
+      }
+    ],
+    "Conditions": {
+      "StringEquals": [
+        {
+          "ConditionKey": "aws:ResourceTag/BackupEnabled",
+          "ConditionValue": "true"
+        }
+      ]
+    }
+  },
+  "BackupVaultPolicy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowBackupService",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "backup.amazonaws.com"
+        },
+        "Action": [
+          "backup:CopyIntoBackupVault"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "DenyDeleteBackup",
+        "Effect": "Deny",
+        "Principal": "*",
+        "Action": [
+          "backup:DeleteRecoveryPoint",
+          "backup:DeleteBackupVault"
+        ],
+        "Resource": "*",
+        "Condition": {
+          "StringEquals": {
+            "aws:ResourceTag/Compliance": "Monthly"
+          }
+        }
+      }
+    ]
+  },
+  "Tags": {
+    "ManagedBy": "Terraform",
+    "Environment": "Lab",
+    "Purpose": "DocumentDB Backup Automation",
+    "CostCenter": "Training"
+  },
+  "Notifications": {
+    "BackupVaultEvents": [
+      "BACKUP_JOB_COMPLETED",
+      "BACKUP_JOB_FAILED",
+      "RESTORE_JOB_COMPLETED",
+      "RESTORE_JOB_FAILED"
+    ],
+    "SNSTopicArn": "arn:aws:sns:us-east-1:ACCOUNT_ID:documentdb-backup-notifications"
+  },
+  "Configuration": {
+    "Description": "Política de backup para clusters DocumentDB do laboratório",
+    "Notes": [
+      "Backups diários retidos por 7 dias",
+      "Backups semanais retidos por 30 dias",
+      "Backups mensais retidos por 1 ano, movidos para cold storage após 90 dias",
+      "Substitua ACCOUNT_ID pelo ID da sua conta AWS",
+      "Crie o tópico SNS antes de aplicar notificações",
+      "Certifique-se que o role IAM tem permissões adequadas"
+    ],
+    "UsageInstructions": {
+      "CreateBackupPlan": "aws backup create-backup-plan --cli-input-json file://backup-policy.json",
+      "CreateBackupSelection": "aws backup create-backup-selection --backup-plan-id <plan-id> --cli-input-json file://backup-selection.json",
+      "ListBackupPlans": "aws backup list-backup-plans",
+      "DescribeBackupPlan": "aws backup get-backup-plan --backup-plan-id <plan-id>",
+      "DeleteBackupPlan": "aws backup delete-backup-plan --backup-plan-id <plan-id>"
+    }
+  },
+  "CostEstimation": {
+    "DailyBackup": {
+      "RetentionDays": 7,
+      "EstimatedCostPerGB": "$0.095",
+      "Description": "Custo para armazenamento warm de backups diários"
+    },
+    "WeeklyBackup": {
+      "RetentionDays": 30,
+      "EstimatedCostPerGB": "$0.095",
+      "Description": "Custo para armazenamento warm de backups semanais"
+    },
+    "MonthlyBackup": {
+      "WarmStorageDays": 90,
+      "ColdStorageDays": 275,
+      "EstimatedWarmCostPerGB": "$0.095",
+      "EstimatedColdCostPerGB": "$0.018",
+      "Description": "Backups mensais com transição para cold storage"
+    },
+    "TotalEstimatedMonthlyCost": "Varia com tamanho do cluster. Exemplo: 100GB cluster = ~$30-40/mês"
+  },
+  "ComplianceConsiderations": {
+    "GDPR": "Considere limites de retenção de dados pessoais",
+    "SOC2": "Backups diários atendem requisitos de disponibilidade",
+    "HIPAA": "Habilite criptografia em todos os backups",
+    "PCI-DSS": "Mantenha backups por no mínimo 3 meses",
+    "ISO27001": "Teste restaurações trimestralmente"
+  },
+  "BestPractices": [
+    "Sempre teste restaurações regularmente",
+    "Habilite notificações SNS para falhas",
+    "Use tags para organizar e rastrear backups",
+    "Considere backups cross-region para DR",
+    "Monitore custos de armazenamento de backup",
+    "Documente procedimentos de restauração",
+    "Implemente política de retenção baseada em compliance",
+    "Use AWS Backup para centralizar gestão de backups"
+  ]
+}
