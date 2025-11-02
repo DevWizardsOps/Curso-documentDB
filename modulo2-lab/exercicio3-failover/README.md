@@ -28,6 +28,7 @@ Failover é o processo de promover uma réplica a primária quando a instância 
 ### Passo 1: Verificar Cluster
 
 ```bash
+# Definir ID
 ID="seu-id"
 
 # Listar instâncias do seu cluster (substitua <seu-id>)
@@ -64,6 +65,9 @@ echo "Instância Primária Atual: $PRIMARY"
 ### Via AWS CLI
 
 ```bash
+# Definir ID
+ID="seu-id"
+
 # Executar failover manual (substitua <seu-id>)
 aws docdb failover-db-cluster \
 --db-cluster-identifier $ID-lab-cluster-console
