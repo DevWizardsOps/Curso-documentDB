@@ -28,21 +28,23 @@ Failover é o processo de promover uma réplica a primária quando a instância 
 ### Passo 1: Verificar Cluster
 
 ```bash
+ID="seu-id"
+
 # Listar instâncias do seu cluster (substitua <seu-id>)
-aws docdb describe-db-cluster-members \
-  --db-cluster-identifier <seu-id>-lab-cluster-console \
-  --query 'DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter, PromotionTier]' \
-  --output table
+aws docdb describe-db-clusters \
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter, PromotionTier]' \
+--output table
 ```
 
 ### Passo 2: Identificar a Primária Atual
 
 ```bash
 # Obter a instância primária (substitua <seu-id>)
-PRIMARY=$(aws docdb describe-db-cluster-members \
-  --db-cluster-identifier <seu-id>-lab-cluster-console \
-  --query 'DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
-  --output text)
+PRIMARY=$(aws docdb describe-db-clusters \
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
+--output text)
 
 echo "Instância Primária Atual: $PRIMARY"
 ```
@@ -64,20 +66,20 @@ echo "Instância Primária Atual: $PRIMARY"
 ```bash
 # Executar failover manual (substitua <seu-id>)
 aws docdb failover-db-cluster \
-  --db-cluster-identifier <seu-id>-lab-cluster-console
+--db-cluster-identifier $ID-lab-cluster-console
 
 echo "Failover iniciado! Monitorando..."
 
 # Monitorar até completar (substitua <seu-id>)
-aws docdb wait db-cluster-available --db-cluster-identifier <seu-id>-lab-cluster-console
+aws docdb wait db-cluster-available --db-cluster-identifier $ID-lab-cluster-console
 
 echo "Failover concluído!"
 
 # Verificar nova primária (substitua <seu-id>)
-NEW_PRIMARY=$(aws docdb describe-db-cluster-members \
-  --db-cluster-identifier <seu-id>-lab-cluster-console \
-  --query 'DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
-  --output text)
+NEW_PRIMARY=$(aws docdb describe-db-clusters \
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
+--output text)
 
 echo "Nova Instância Primária: $NEW_PRIMARY"
 ```
@@ -87,7 +89,7 @@ echo "Nova Instância Primária: $NEW_PRIMARY"
 ```bash
 cd scripts/
 chmod +x test-failover.sh
-./test-failover.sh <seu-id>-lab-cluster-console
+./test-failover.sh $ID-lab-cluster-console
 ```
 
 ---
@@ -100,16 +102,16 @@ chmod +x test-failover.sh
 # Reiniciar a instância primária (força failover)
 # A variável $PRIMARY foi definida na Parte 1
 aws docdb reboot-db-instance \
-  --db-instance-identifier $PRIMARY \
-  --force-failover
+--db-instance-identifier $PRIMARY \
+--force-failover
 
 echo "Reboot com failover iniciado..."
 
 # Monitorar o processo (substitua <seu-id>)
-watch -n 2 "aws docdb describe-db-cluster-members \
-  --db-cluster-identifier <seu-id>-lab-cluster-console \
-  --query 'DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter]' \
-  --output table"
+watch -n 2 "aws docdb describe-db-clusters \
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter]' \
+--output table"
 ```
 
 ---
@@ -123,11 +125,11 @@ cd scripts/
 chmod +x monitor-endpoints.sh
 
 # Em um terminal, inicie o monitoramento (substitua <seu-id>)
-./monitor-endpoints.sh <seu-id>-lab-cluster-console
+./monitor-endpoints.sh $ID-lab-cluster-console
 
 # Em outro terminal, execute o failover (substitua <seu-id>)
 aws docdb failover-db-cluster \
-  --db-cluster-identifier <seu-id>-lab-cluster-console
+--db-cluster-identifier $ID-lab-cluster-console
 ```
 
 ---
@@ -151,7 +153,10 @@ const CONFIG = {
 Depois de editar, execute os comandos:
 
 ```bash
+ID=<seu-id>
+
 cd exemplos/
+sudo dnf install npm -y
 npm install mongodb
 
 # Executar aplicação de teste
@@ -159,17 +164,19 @@ node connection-failover.js
 
 # Em outro terminal, force um failover (substitua <seu-id>)
 aws docdb failover-db-cluster \
-  --db-cluster-identifier <seu-id>-lab-cluster-console
+--db-cluster-identifier $ID-lab-cluster-console
 ```
 
 ---
 
 ## ✅ Checklist de Conclusão
 
-- [ ] Identificou instância primária do seu cluster
-- [ ] Executou failover manual com sucesso no seu cluster
-- [ ] Mediu o tempo de recuperação (RTO)
-- [ ] Validou a reconexão automática da aplicação
+Execute o script de validação a partir do diretório home do usuário.
+
+```bash
+# Executa o grade para avaliar atividades
+./grade_exercicio3.sh
+```
 
 ---
 

@@ -253,7 +253,7 @@ aws docdb describe-db-cluster-snapshots \
 Execute o script de validação a partir do diretório home do usuário.
 
 ```bash
-# Obter endpoint do Terraform
+# Executa o grade para avaliar atividades
 ./grade_exercicio2.sh
 ```
 
@@ -281,8 +281,6 @@ aws docdb delete-db-cluster-snapshot --db-cluster-snapshot-identifier $ID-lab-sn
 # Deletar snapshot manual da console (substitua <seu-id>)
 aws docdb delete-db-cluster-snapshot --db-cluster-snapshot-identifier $ID-lab-snapshot-manual-console-001
 
-# Deletar SubnetGroup
-aws docdb delete-db-subnet-group --db-subnet-group-name $ID-docdb-lab-subnet-group
 ```
 
 ---

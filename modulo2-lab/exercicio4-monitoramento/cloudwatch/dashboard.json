@@ -2,6 +2,10 @@
     "widgets": [
         {
             "type": "metric",
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 6,
             "properties": {
                 "metrics": [
                     [ "AWS/DocDB", "CPUUtilization", "DBClusterIdentifier", "YOUR_CLUSTER_IDENTIFIER", { "stat": "Average" } ]
@@ -9,31 +13,100 @@
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-east-1",
-                "title": "CPU Utilization",
+                "title": "CPU Utilization (%)",
+                "period": 300,
+                "yAxis": {
+                    "left": {
+                        "min": 0,
+                        "max": 100
+                    }
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 12,
+            "y": 0,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [ "AWS/DocDB", "DatabaseConnections", "DBClusterIdentifier", "YOUR_CLUSTER_IDENTIFIER", { "stat": "Average" } ]
+                ],
+                "view": "singleValue",
+                "stacked": false,
+                "region": "us-east-1",
+                "title": "Active Connections",
                 "period": 300
             }
         },
         {
             "type": "metric",
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 6,
             "properties": {
                 "metrics": [
-                    [ "AWS/DocDB", "DatabaseConnections", "DBClusterIdentifier", "YOUR_CLUSTER_IDENTIFIER", { "stat": "Sum" } ]
+                    [ "AWS/DocDB", "ReadLatency", "DBClusterIdentifier", "YOUR_CLUSTER_IDENTIFIER", { "stat": "Average" } ],
+                    [ ".", "WriteLatency", ".", ".", { "stat": "Average" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-east-1",
-                "title": "Active Database Connections",
-                "period": 300
+                "title": "Read/Write Latency (ms)",
+                "period": 300,
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                }
             }
         },
         {
-            "type": "log",
+            "type": "metric",
+            "x": 12,
+            "y": 6,
+            "width": 12,
+            "height": 6,
             "properties": {
-                "query": "SOURCE '/aws/docdb/YOUR_CLUSTER_IDENTIFIER/audit'\n| fields @timestamp, @message\n| sort @timestamp desc\n| limit 20",
+                "metrics": [
+                    [ "AWS/DocDB", "NetworkReceiveThroughput", "DBClusterIdentifier", "YOUR_CLUSTER_IDENTIFIER", { "stat": "Average" } ],
+                    [ ".", "NetworkTransmitThroughput", ".", ".", { "stat": "Average" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": true,
                 "region": "us-east-1",
+                "title": "Network Throughput (Bytes/sec)",
+                "period": 300,
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 12,
+            "width": 24,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [ "AWS/DocDB", "VolumeReadIOPs", "DBClusterIdentifier", "YOUR_CLUSTER_IDENTIFIER", { "stat": "Average" } ],
+                    [ ".", "VolumeWriteIOPs", ".", ".", { "stat": "Average" } ]
+                ],
+                "view": "timeSeries",
                 "stacked": false,
-                "title": "Recent Audit Logs",
-                "view": "table"
+                "region": "us-east-1",
+                "title": "Volume Read/Write IOPs",
+                "period": 300,
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                }
             }
         }
     ]

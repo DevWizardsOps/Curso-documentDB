@@ -196,7 +196,7 @@ mongosh --host $ENDPOINT:27017 \
 Execute o script de validação a partir do diretório home do usuário.
 
 ```bash
-# Obter endpoint do Terraform
+# Executa o grade para avaliar atividades
 ./grade_exercicio1.sh
 ```
 

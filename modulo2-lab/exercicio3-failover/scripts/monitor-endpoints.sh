@@ -95,11 +95,11 @@ cleanup() {
     TOTAL_CHECKS=$((SUCCESS_COUNT + FAILURE_COUNT))
     if [ $TOTAL_CHECKS -gt 0 ]; then
         AVAILABILITY=$(awk "BEGIN {printf \"%.2f\", ($SUCCESS_COUNT / $TOTAL_CHECKS) * 100}")
-        echo "  ✓ Checks Bem-sucedidos:  ${SUCCESS_COUNT}"
-        echo "  ✗ Checks Falhados:       ${FAILURE_COUNT}"
-        echo "  📊 Total de Checks:      ${TOTAL_CHECKS}"
-        echo "  ⏱️  Downtime Total:       ${TOTAL_DOWNTIME}s"
-        echo "  📈 Disponibilidade:      ${AVAILABILITY}%"
+        echo -e "  ✓ Checks Bem-sucedidos:  ${SUCCESS_COUNT}"
+        echo -e "  ✗ Checks Falhados:       ${FAILURE_COUNT}"
+        echo -e "  📊 Total de Checks:      ${TOTAL_CHECKS}"
+        echo -e "  ⏱️  Downtime Total:       ${TOTAL_DOWNTIME}s"
+        echo -e "  📈 Disponibilidade:      ${AVAILABILITY}%"
     fi
     
     echo ""
@@ -118,9 +118,9 @@ log_event "Reader Endpoint: $READER_ENDPOINT:$PORT"
 log_event "═══════════════════════════════════════════════════════"
 
 # Obter primária inicial
-INITIAL_PRIMARY=$(aws docdb describe-db-cluster-members \
+INITIAL_PRIMARY=$(aws docdb describe-db-clusters \
     --db-cluster-identifier "$CLUSTER_ID" \
-    --query 'DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
+    --query 'DBClusters[0].DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
     --output text)
 
 log_event "Primária Inicial: $INITIAL_PRIMARY"
@@ -174,9 +174,9 @@ while true; do
     fi
     
     # Obter primária atual
-    CURRENT_PRIMARY=$(aws docdb describe-db-cluster-members \
+    CURRENT_PRIMARY=$(aws docdb describe-db-clusters \
         --db-cluster-identifier "$CLUSTER_ID" \
-        --query 'DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
+        --query 'DBClusters[0].DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
         --output text 2>/dev/null || echo "unknown")
     
     # Detectar mudança de primária

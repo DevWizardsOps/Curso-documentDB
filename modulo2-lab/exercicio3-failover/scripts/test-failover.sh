@@ -61,14 +61,14 @@ echo ""
 log "📊 Coletando estado inicial do cluster..."
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-INITIAL_PRIMARY=$(aws docdb describe-db-cluster-members \
+INITIAL_PRIMARY=$(aws docdb describe-db-clusters \
     --db-cluster-identifier "$CLUSTER_ID" \
-    --query 'DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
+    --query 'DBClusters[0].DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
     --output text)
 
-TOTAL_INSTANCES=$(aws docdb describe-db-cluster-members \
+TOTAL_INSTANCES=$(aws docdb describe-db-clusters \
     --db-cluster-identifier "$CLUSTER_ID" \
-    --query 'length(DBClusterMembers)' \
+    --query 'length(DBClusters[0].DBClusterMembers)' \
     --output text)
 
 CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
@@ -78,18 +78,18 @@ CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
 
 echo ""
 echo -e "${YELLOW}Estado Inicial:${NC}"
-echo "  ├─ Instância Primária: ${GREEN}${INITIAL_PRIMARY}${NC}"
-echo "  ├─ Total de Instâncias: ${TOTAL_INSTANCES}"
-echo "  └─ Cluster Endpoint: ${CLUSTER_ENDPOINT}"
+echo -e "  ├─ Instância Primária: ${GREEN}${INITIAL_PRIMARY}${NC}"
+echo -e "  ├─ Total de Instâncias: ${TOTAL_INSTANCES}"
+echo -e "  └─ Cluster Endpoint: ${CLUSTER_ENDPOINT}"
 echo ""
 
 log "Estado inicial: Primary=$INITIAL_PRIMARY, Instances=$TOTAL_INSTANCES"
 
 # Listar todas as instâncias
 echo -e "${YELLOW}Topologia do Cluster:${NC}"
-aws docdb describe-db-cluster-members \
+aws docdb describe-db-clusters \
     --db-cluster-identifier "$CLUSTER_ID" \
-    --query 'DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter, PromotionTier]' \
+    --query 'DBClusters[0].DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter, PromotionTier]' \
     --output table
 
 echo ""
@@ -129,7 +129,7 @@ else
 fi
 
 echo ""
-echo "⏳ Aguardando failover completar..."
+echo -e "⏳ Aguardando failover completar..."
 echo ""
 
 # Monitorar o progresso
@@ -147,15 +147,16 @@ while [ $CHECK_COUNT -lt $MAX_CHECKS ]; do
         --query 'DBClusters[0].Status' \
         --output text 2>/dev/null)
     
-    CURRENT_PRIMARY=$(aws docdb describe-db-cluster-members \
+    CURRENT_PRIMARY=$(aws docdb describe-db-clusters \
         --db-cluster-identifier "$CLUSTER_ID" \
-        --query 'DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
+        --query 'DBClusters[0].DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
         --output text 2>/dev/null)
     
     # Detectar quando a primária muda
     if [ "$CURRENT_PRIMARY" != "$INITIAL_PRIMARY" ] && [ "$DETECTED_CHANGE" = false ]; then
         CHANGE_TIME=$(date +%s)
         CHANGE_DURATION=$((CHANGE_TIME - START_TIME))
+        echo ""
         echo -e "${YELLOW}🔄 Detectada mudança de primária após ${CHANGE_DURATION}s${NC}"
         log "🔄 Mudança detectada após ${CHANGE_DURATION}s: $INITIAL_PRIMARY -> $CURRENT_PRIMARY"
         DETECTED_CHANGE=true
@@ -191,9 +192,9 @@ echo -e "${GREEN}📊 Resultados do Teste de Failover${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-FINAL_PRIMARY=$(aws docdb describe-db-cluster-members \
+FINAL_PRIMARY=$(aws docdb describe-db-clusters \
     --db-cluster-identifier "$CLUSTER_ID" \
-    --query 'DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
+    --query 'DBClusters[0].DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
     --output text)
 
 FINAL_STATUS=$(aws docdb describe-db-clusters \
@@ -203,18 +204,18 @@ FINAL_STATUS=$(aws docdb describe-db-clusters \
 
 # Calcular métricas
 RTO=$TOTAL_DURATION
-DETECTION_TIME=$((CHANGE_DURATION))
+DETECTION_TIME=${CHANGE_DURATION:-$TOTAL_DURATION}
 
 echo -e "${YELLOW}┌─────────────────────────────────────────────────────┐${NC}"
 echo -e "${YELLOW}│  Métricas de Recuperação (RTO)                     │${NC}"
 echo -e "${YELLOW}└─────────────────────────────────────────────────────┘${NC}"
 echo ""
-echo "  📍 Primária Inicial:     ${INITIAL_PRIMARY}"
-echo "  📍 Primária Final:       ${GREEN}${FINAL_PRIMARY}${NC}"
-echo "  ⏱️  Tempo de Detecção:    ${DETECTION_TIME}s"
-echo "  ⏱️  RTO Total:            ${GREEN}${RTO}s${NC}"
-echo "  📊 Status Final:         ${FINAL_STATUS}"
-echo "  🌐 Endpoint:             ${CLUSTER_ENDPOINT} (inalterado)"
+echo -e "  📍 Primária Inicial:     ${INITIAL_PRIMARY}"
+echo -e "  📍 Primária Final:       ${GREEN}${FINAL_PRIMARY}${NC}"
+echo -e "  🔄 Tempo de Detecção:    ${GREEN}${DETECTION_TIME}s${NC} (mudança de primária)"
+echo -e "  ⏱️  RTO Total:            ${GREEN}${RTO}s${NC} (cluster disponível)"
+echo -e "  📊 Status Final:         ${FINAL_STATUS}"
+echo -e "  🌐 Endpoint:             ${CLUSTER_ENDPOINT} (inalterado)"
 echo ""
 
 # Log das métricas
@@ -222,8 +223,8 @@ log "═════════════════════════
 log "MÉTRICAS FINAIS:"
 log "  Primária Inicial: $INITIAL_PRIMARY"
 log "  Primária Final: $FINAL_PRIMARY"
-log "  Tempo de Detecção: ${DETECTION_TIME}s"
-log "  RTO Total: ${RTO}s"
+log "  Tempo de Detecção (mudança): ${DETECTION_TIME}s"
+log "  RTO Total (disponível): ${RTO}s"
 log "  Status: $FINAL_STATUS"
 log "═══════════════════════════════════════════════════════"
 
@@ -231,6 +232,11 @@ log "═════════════════════════
 echo -e "${YELLOW}┌─────────────────────────────────────────────────────┐${NC}"
 echo -e "${YELLOW}│  Análise de Performance                             │${NC}"
 echo -e "${YELLOW}└─────────────────────────────────────────────────────┘${NC}"
+echo ""
+
+echo -e "  📝 ${BLUE}Explicação dos Tempos:${NC}"
+echo -e "     • Tempo de Detecção: quando a nova primária assume"
+echo -e "     • RTO Total: quando o cluster fica completamente disponível"
 echo ""
 
 if [ $RTO -lt 60 ]; then
@@ -245,9 +251,9 @@ echo ""
 
 # Listar topologia final
 echo -e "${YELLOW}Topologia Final do Cluster:${NC}"
-aws docdb describe-db-cluster-members \
+aws docdb describe-db-clusters \
     --db-cluster-identifier "$CLUSTER_ID" \
-    --query 'DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter, PromotionTier]' \
+    --query 'DBClusters[0].DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter, PromotionTier]' \
     --output table
 
 echo ""
@@ -257,11 +263,11 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${MAGENTA}💡 Recomendações${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo "  • Documente este RTO para seu playbook de DR"
-echo "  • Configure suas aplicações para reconectar automaticamente"
-echo "  • Use sempre o cluster endpoint, não endpoints de instâncias"
-echo "  • Teste failover regularmente (ex: trimestralmente)"
-echo "  • Configure alarmes CloudWatch para eventos de failover"
+echo -e "  • Documente este RTO para seu playbook de DR"
+echo -e "  • Configure suas aplicações para reconectar automaticamente"
+echo -e "  • Use sempre o cluster endpoint, não endpoints de instâncias"
+echo -e "  • Teste failover regularmente (ex: trimestralmente)"
+echo -e "  • Configure alarmes CloudWatch para eventos de failover"
 echo ""
 
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
