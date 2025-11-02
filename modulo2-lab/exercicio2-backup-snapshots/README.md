@@ -262,23 +262,27 @@ Execute o script de validação a partir do diretório home do usuário.
 ## 🧹 Limpeza
 
 ```bash
-# Deletar cluster restaurado (substitua <seu-id>)
-aws docdb delete-db-cluster \
---db-cluster-identifier $ID-lab-cluster-restored \
---skip-final-snapshot
+# Detelar todas as instancias do cluster restaurado
+aws docdb delete-db-instance --db-instance-identifier $ID-lab-cluster-restored-1
 
-# Deletar cluster PITR (se criado) (substitua <seu-id>)
-aws docdb delete-db-cluster \
---db-cluster-identifier $ID-lab-cluster-pitr \
---skip-final-snapshot
+# Detelar todas cluster restaurado
+aws docdb delete-db-cluster --db-cluster-identifier $ID-lab-cluster-restored --skip-final-snapshot
+
+# Detelar todas as instancias do cluster restaurado PITR
+aws docdb delete-db-instance --db-instance-identifier $ID-lab-cluster-pitr-1
+aws docdb delete-db-instance --db-instance-identifier $ID-lab-cluster-pitr-2
+
+# Detelar todas cluster restaurado PITR
+aws docdb delete-db-cluster --db-cluster-identifier $ID-lab-cluster-pitr --skip-final-snapshot
 
 # Deletar snapshot manual (substitua <seu-id>)
-aws docdb delete-db-cluster-snapshot \
---db-cluster-snapshot-identifier $ID-lab-snapshot-manual-001
+aws docdb delete-db-cluster-snapshot --db-cluster-snapshot-identifier $ID-lab-snapshot-manual-001
 
 # Deletar snapshot manual da console (substitua <seu-id>)
-aws docdb delete-db-cluster-snapshot \
---db-cluster-snapshot-identifier $ID-lab-snapshot-manual-console-001
+aws docdb delete-db-cluster-snapshot --db-cluster-snapshot-identifier $ID-lab-snapshot-manual-console-001
+
+# Deletar SubnetGroup
+aws docdb delete-db-subnet-group --db-subnet-group-name $ID-docdb-lab-subnet-group
 ```
 
 ---
