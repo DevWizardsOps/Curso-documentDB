@@ -40,7 +40,7 @@
 3. Clique em **Modify**
 4. Em **Backup:**
    - **Backup retention period:** 7 dias
-   - **Backup window:** 03:00-04:00 UTC
+   - **Backup window:** 02:00-04:00 UTC
 5. Clique em **Continue**
 6. **Apply immediately:** Yes
 7. Clique em **Modify cluster**
@@ -48,18 +48,21 @@
 ### Via AWS CLI
 
 ```bash
+# Definir ID
+ID="seu-id"
+
 # Modificar política de backup (substitua <seu-id>)
 aws docdb modify-db-cluster \
-  --db-cluster-identifier <seu-id>-lab-cluster-console \
-  --backup-retention-period 7 \
-  --preferred-backup-window "03:00-04:00" \
-  --apply-immediately
+--db-cluster-identifier $ID-lab-cluster-console \
+--backup-retention-period 7 \
+--preferred-backup-window "02:00-04:00" \
+--apply-immediately
 
 # Verificar configuração (substitua <seu-id>)
 aws docdb describe-db-clusters \
-  --db-cluster-identifier <seu-id>-lab-cluster-console \
-  --query 'DBClusters[0].[BackupRetentionPeriod, PreferredBackupWindow]' \
-  --output table
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].[BackupRetentionPeriod, PreferredBackupWindow]' \
+--output table
 ```
 
 ---
@@ -71,9 +74,9 @@ aws docdb describe-db-clusters \
 1. No console DocumentDB, selecione o cluster `<seu-id>-lab-cluster-console`
 2. Clique em **Actions** → **Take snapshot**
 3. Configure:
-   - **Snapshot identifier:** `<seu-id>-lab-snapshot-manual-001`
+   - **Snapshot identifier:** `<seu-id>-lab-snapshot-manual-console-001`
    - **Tags:** (opcional)
-     - Key: `Purpose`, Value: `Lab Exercise`
+     - Key: `Purpose`, Value: `LabExercise`
      - Key: `Student`, Value: `<seu-id>`
 4. Clique em **Take snapshot**
 5. Aguarde até status = **Available** (~5-10 minutos)
@@ -81,23 +84,25 @@ aws docdb describe-db-clusters \
 ### Via AWS CLI
 
 ```bash
+ID="seu-id"
+
 # Criar snapshot (substitua <seu-id>)
 aws docdb create-db-cluster-snapshot \
-  --db-cluster-snapshot-identifier <seu-id>-lab-snapshot-manual-001 \
-  --db-cluster-identifier <seu-id>-lab-cluster-console \
-  --tags Key=Purpose,Value=LabExercise Key=Student,Value=<seu-id>
+--db-cluster-snapshot-identifier $ID-lab-snapshot-manual-001 \
+--db-cluster-identifier $ID-lab-cluster-console \
+--tags Key=Purpose,Value=LabExercise Key=Student,Value=$ID
 
 # Verificar progresso (substitua <seu-id>)
 aws docdb describe-db-cluster-snapshots \
-  --db-cluster-snapshot-identifier <seu-id>-lab-snapshot-manual-001 \
-  --query 'DBClusterSnapshots[0].[Status, PercentProgress]' \
-  --output table
+--db-cluster-snapshot-identifier $ID-lab-snapshot-manual-001 \
+--query 'DBClusterSnapshots[0].[Status, PercentProgress]' \
+--output table
 
 # Listar todos os seus snapshots manuais (substitua <seu-id>)
 aws docdb describe-db-cluster-snapshots \
-  --snapshot-type manual \
-  --query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '<seu-id>')].[DBClusterSnapshotIdentifier, Status, SnapshotCreateTime]" \
-  --output table
+--snapshot-type manual \
+--query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '$ID')].[DBClusterSnapshotIdentifier, Status, SnapshotCreateTime]" \
+--output table
 ```
 
 ### Via Script
@@ -107,7 +112,7 @@ Use o script fornecido, passando o nome do seu cluster:
 ```bash
 cd scripts/
 chmod +x backup-manual.sh
-./backup-manual.sh <seu-id>-lab-cluster-console
+./backup-manual.sh $ID-lab-cluster-console
 ```
 
 ---
@@ -135,25 +140,35 @@ Você precisa criar um cluster de desenvolvimento a partir do snapshot de produ�
 ### Via AWS CLI
 
 ```bash
+ID="seu-id"
+
+# Obter o security group ID pelo nome
+SG_ID=$(aws ec2 describe-security-groups \
+--filters "Name=group-name,Values=$ID-docdb-lab-sg" \
+--query 'SecurityGroups[0].GroupId' \
+--output text)
+
+echo "Security Group ID: $SG_ID"
+
 # Restaurar snapshot (substitua <seu-id> e o ID do seu security group)
 aws docdb restore-db-cluster-from-snapshot \
-  --db-cluster-identifier <seu-id>-lab-cluster-restored \
-  --snapshot-identifier <seu-id>-lab-snapshot-manual-001 \
-  --engine docdb \
-  --db-subnet-group-name <seu-id>-docdb-lab-subnet-group \
-  --vpc-security-group-ids <seu-sg-id>
+--db-cluster-identifier $ID-lab-cluster-restored \
+--snapshot-identifier $ID-lab-snapshot-manual-001 \
+--engine docdb \
+--db-subnet-group-name $ID-docdb-lab-subnet-group \
+--vpc-security-group-ids $SG_ID
 
 # Criar instância no cluster restaurado (substitua <seu-id>)
 aws docdb create-db-instance \
-  --db-instance-identifier <seu-id>-lab-cluster-restored-1 \
-  --db-instance-class db.t3.medium \
-  --db-cluster-identifier <seu-id>-lab-cluster-restored \
-  --engine docdb
+--db-instance-identifier $ID-lab-cluster-restored-1 \
+--db-instance-class db.t3.medium \
+--db-cluster-identifier $ID-lab-cluster-restored \
+--engine docdb
 
 # Verificar restauração (substitua <seu-id>)
 aws docdb describe-db-clusters \
-  --db-cluster-identifier <seu-id>-lab-cluster-restored \
-  --query 'DBClusters[0].Status'
+--db-cluster-identifier $ID-lab-cluster-restored \
+--query 'DBClusters[0].Status'
 ```
 
 ### Via Script
@@ -161,7 +176,7 @@ aws docdb describe-db-clusters \
 ```bash
 cd scripts/
 chmod +x restore-snapshot.sh
-./restore-snapshot.sh <seu-id>-lab-snapshot-manual-001 <seu-id>-lab-cluster-restored
+./restore-snapshot.sh $ID-lab-snapshot-manual-001 $ID-lab-cluster-restored
 ```
 
 ---
@@ -187,24 +202,31 @@ Permite restaurar o cluster para qualquer ponto no tempo dentro do período de r
 ```bash
 # Obter janela de restauração disponível (substitua <seu-id>)
 aws docdb describe-db-clusters \
-  --db-cluster-identifier <seu-id>-lab-cluster-console \
-  --query 'DBClusters[0].[EarliestRestorableTime, LatestRestorableTime]' \
-  --output table
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].[EarliestRestorableTime, LatestRestorableTime]' \
+--output table
 
 # Restaurar para ponto específico (substitua <seu-id> e o ID do seu security group)
 aws docdb restore-db-cluster-to-point-in-time \
-  --source-db-cluster-identifier <seu-id>-lab-cluster-console \
-  --db-cluster-identifier <seu-id>-lab-cluster-pitr \
-  --restore-to-time "2025-11-01T20:00:00Z" \
-  --db-subnet-group-name <seu-id>-docdb-lab-subnet-group \
-  --vpc-security-group-ids <seu-sg-id>
+--source-db-cluster-identifier $ID-lab-cluster-console \
+--db-cluster-identifier $ID-lab-cluster-pitr \
+--restore-to-time "2025-11-02T17:30:00Z" \
+--db-subnet-group-name $ID-docdb-lab-subnet-group \
+--vpc-security-group-ids $SG_ID
 
 # Adicionar instância (substitua <seu-id>)
 aws docdb create-db-instance \
-  --db-instance-identifier <seu-id>-lab-cluster-pitr-1 \
-  --db-instance-class db.t3.medium \
-  --db-cluster-identifier <seu-id>-lab-cluster-pitr \
-  --engine docdb
+--db-instance-identifier $ID-lab-cluster-pitr-1 \
+--db-instance-class db.t3.medium \
+--db-cluster-identifier $ID-lab-cluster-pitr \
+--engine docdb
+
+# Adicionar segunda instância (substitua <seu-id>)
+aws docdb create-db-instance \
+--db-instance-identifier $ID-lab-cluster-pitr-2 \
+--db-instance-class db.t3.medium \
+--db-cluster-identifier $ID-lab-cluster-pitr \
+--engine docdb
 ```
 
 ---
@@ -216,30 +238,24 @@ aws docdb create-db-instance \
 ```bash
 # Listar snapshots do seu cluster (substitua <seu-id>)
 aws docdb describe-db-cluster-snapshots \
-  --db-cluster-identifier <seu-id>-lab-cluster-console
+--db-cluster-identifier $ID-lab-cluster-console
 
 # Listar todos os seus snapshots manuais (substitua <seu-id>)
 aws docdb describe-db-cluster-snapshots \
-  --snapshot-type manual \
-  --query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '<seu-id>')].DBClusterSnapshotIdentifier"
-```
-
-### Deletar Snapshot Manual
-
-```bash
-# Via CLI (substitua <seu-id>)
-aws docdb delete-db-cluster-snapshot \
-  --db-cluster-snapshot-identifier <seu-id>-lab-snapshot-manual-001
+--snapshot-type manual \
+--query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '$ID')].DBClusterSnapshotIdentifier"
 ```
 
 ---
 
 ## ✅ Checklist de Conclusão
 
-- [ ] Política de backup configurada
-- [ ] Snapshot manual criado com prefixo
-- [ ] Cluster restaurado a partir de snapshot com prefixo
-- [ ] Entendeu como usar prefixos para isolar recursos
+Execute o script de validação a partir do diretório home do usuário.
+
+```bash
+# Obter endpoint do Terraform
+./grade_exercicio2.sh
+```
 
 ---
 
@@ -248,17 +264,21 @@ aws docdb delete-db-cluster-snapshot \
 ```bash
 # Deletar cluster restaurado (substitua <seu-id>)
 aws docdb delete-db-cluster \
-  --db-cluster-identifier <seu-id>-lab-cluster-restored \
-  --skip-final-snapshot
+--db-cluster-identifier $ID-lab-cluster-restored \
+--skip-final-snapshot
 
 # Deletar cluster PITR (se criado) (substitua <seu-id>)
 aws docdb delete-db-cluster \
-  --db-cluster-identifier <seu-id>-lab-cluster-pitr \
-  --skip-final-snapshot
+--db-cluster-identifier $ID-lab-cluster-pitr \
+--skip-final-snapshot
 
 # Deletar snapshot manual (substitua <seu-id>)
 aws docdb delete-db-cluster-snapshot \
-  --db-cluster-snapshot-identifier <seu-id>-lab-snapshot-manual-001
+--db-cluster-snapshot-identifier $ID-lab-snapshot-manual-001
+
+# Deletar snapshot manual da console (substitua <seu-id>)
+aws docdb delete-db-cluster-snapshot \
+--db-cluster-snapshot-identifier $ID-lab-snapshot-manual-console-001
 ```
 
 ---
