@@ -1,228 +1,54 @@
 {
   "Rules": [
     {
-      "Name": "documentdb-failover-events",
-      "Description": "Detectar eventos de failover do DocumentDB",
+      "Name": "<seu-id>-documentdb-failover-events",
+      "Description": "Detectar eventos de failover do DocumentDB para <seu-id>",
       "EventPattern": {
         "source": ["aws.rds"],
         "detail-type": ["RDS DB Instance Event"],
         "detail": {
-          "EventCategories": ["failover"]
+          "EventCategories": ["failover"],
+          "SourceIdentifier": [{
+            "prefix": "<seu-id>-"
+          }]
         }
       },
       "State": "ENABLED",
       "Targets": [
         {
           "Id": "1",
-          "Arn": "arn:aws:sns:us-east-1:ACCOUNT_ID:documentdb-alerts",
-          "InputTransformer": {
-            "InputPathsMap": {
-              "instance": "$.detail.SourceArn",
-              "message": "$.detail.Message",
-              "time": "$.time"
-            },
-            "InputTemplate": "\"🔄 FAILOVER DETECTADO\\n\\nInstância: <instance>\\nMensagem: <message>\\nHorário: <time>\\n\\nAção: Verifique o status do cluster e confirme que as aplicações reconectaram.\""
-          }
+          "Arn": "arn:aws:sns:us-east-1:ACCOUNT_ID:<seu-id>-documentdb-alerts"
         }
       ]
     },
     {
-      "Name": "documentdb-backup-events",
-      "Description": "Monitorar eventos de backup do DocumentDB",
+      "Name": "<seu-id>-documentdb-backup-events",
+      "Description": "Monitorar eventos de backup do DocumentDB para <seu-id>",
       "EventPattern": {
         "source": ["aws.rds"],
         "detail-type": ["RDS DB Cluster Snapshot Event"],
         "detail": {
-          "EventCategories": ["backup"]
+          "EventCategories": ["backup"],
+          "SourceIdentifier": [{
+            "prefix": "<seu-id>-"
+          }]
         }
       },
       "State": "ENABLED",
       "Targets": [
         {
           "Id": "1",
-          "Arn": "arn:aws:sns:us-east-1:ACCOUNT_ID:documentdb-alerts",
-          "InputTransformer": {
-            "InputPathsMap": {
-              "cluster": "$.detail.SourceIdentifier",
-              "message": "$.detail.Message",
-              "time": "$.time"
-            },
-            "InputTemplate": "\"💾 EVENTO DE BACKUP\\n\\nCluster: <cluster>\\nMensagem: <message>\\nHorário: <time>\""
-          }
-        }
-      ]
-    },
-    {
-      "Name": "documentdb-maintenance-events",
-      "Description": "Alertas de manutenção programada",
-      "EventPattern": {
-        "source": ["aws.rds"],
-        "detail-type": ["RDS DB Instance Event"],
-        "detail": {
-          "EventCategories": ["maintenance"]
-        }
-      },
-      "State": "ENABLED",
-      "Targets": [
-        {
-          "Id": "1",
-          "Arn": "arn:aws:sns:us-east-1:ACCOUNT_ID:documentdb-alerts",
-          "InputTransformer": {
-            "InputPathsMap": {
-              "instance": "$.detail.SourceIdentifier",
-              "message": "$.detail.Message",
-              "time": "$.time"
-            },
-            "InputTemplate": "\"🔧 MANUTENÇÃO PROGRAMADA\\n\\nInstância: <instance>\\nMensagem: <message>\\nHorário: <time>\\n\\nPrepare-se para possível indisponibilidade temporária.\""
-          }
-        }
-      ]
-    },
-    {
-      "Name": "documentdb-availability-events",
-      "Description": "Eventos de disponibilidade do cluster",
-      "EventPattern": {
-        "source": ["aws.rds"],
-        "detail-type": ["RDS DB Instance Event"],
-        "detail": {
-          "EventCategories": ["availability"]
-        }
-      },
-      "State": "ENABLED",
-      "Targets": [
-        {
-          "Id": "1",
-          "Arn": "arn:aws:sns:us-east-1:ACCOUNT_ID:documentdb-alerts",
-          "InputTransformer": {
-            "InputPathsMap": {
-              "instance": "$.detail.SourceIdentifier",
-              "message": "$.detail.Message",
-              "time": "$.time"
-            },
-            "InputTemplate": "\"⚠️ EVENTO DE DISPONIBILIDADE\\n\\nInstância: <instance>\\nMensagem: <message>\\nHorário: <time>\""
-          }
-        }
-      ]
-    },
-    {
-      "Name": "documentdb-configuration-change",
-      "Description": "Mudanças de configuração do cluster",
-      "EventPattern": {
-        "source": ["aws.rds"],
-        "detail-type": ["RDS DB Cluster Event", "RDS DB Instance Event"],
-        "detail": {
-          "EventCategories": ["configuration change"]
-        }
-      },
-      "State": "ENABLED",
-      "Targets": [
-        {
-          "Id": "1",
-          "Arn": "arn:aws:sns:us-east-1:ACCOUNT_ID:documentdb-alerts",
-          "InputTransformer": {
-            "InputPathsMap": {
-              "resource": "$.detail.SourceIdentifier",
-              "message": "$.detail.Message",
-              "time": "$.time"
-            },
-            "InputTemplate": "\"⚙️ MUDANÇA DE CONFIGURAÇÃO\\n\\nRecurso: <resource>\\nMensagem: <message>\\nHorário: <time>\""
-          }
-        }
-      ]
-    },
-    {
-      "Name": "documentdb-security-events",
-      "Description": "Eventos de segurança e acesso",
-      "EventPattern": {
-        "source": ["aws.rds"],
-        "detail-type": ["RDS DB Instance Event", "RDS DB Cluster Event"],
-        "detail": {
-          "EventCategories": ["security"]
-        }
-      },
-      "State": "ENABLED",
-      "Targets": [
-        {
-          "Id": "1",
-          "Arn": "arn:aws:sns:us-east-1:ACCOUNT_ID:documentdb-alerts",
-          "InputTransformer": {
-            "InputPathsMap": {
-              "resource": "$.detail.SourceIdentifier",
-              "message": "$.detail.Message",
-              "time": "$.time"
-            },
-            "InputTemplate": "\"🔒 EVENTO DE SEGURANÇA\\n\\nRecurso: <resource>\\nMensagem: <message>\\nHorário: <time>\\n\\n⚠️ Revise imediatamente este evento de segurança.\""
-          }
-        }
-      ]
-    },
-    {
-      "Name": "documentdb-deletion-events",
-      "Description": "Alertas de deleção de recursos",
-      "EventPattern": {
-        "source": ["aws.rds"],
-        "detail-type": ["RDS DB Instance Event", "RDS DB Cluster Event"],
-        "detail": {
-          "EventCategories": ["deletion"]
-        }
-      },
-      "State": "ENABLED",
-      "Targets": [
-        {
-          "Id": "1",
-          "Arn": "arn:aws:sns:us-east-1:ACCOUNT_ID:documentdb-alerts",
-          "InputTransformer": {
-            "InputPathsMap": {
-              "resource": "$.detail.SourceIdentifier",
-              "message": "$.detail.Message",
-              "time": "$.time"
-            },
-            "InputTemplate": "\"🗑️ RECURSO DELETADO\\n\\nRecurso: <resource>\\nMensagem: <message>\\nHorário: <time>\\n\\n⚠️ CRÍTICO: Um recurso do DocumentDB foi deletado!\""
-          }
+          "Arn": "arn:aws:sns:us-east-1:ACCOUNT_ID:<seu-id>-documentdb-alerts"
         }
       ]
     }
   ],
   "Instructions": {
     "Setup": [
-      "1. Substitua ACCOUNT_ID pelo ID da sua conta AWS",
-      "2. Crie o tópico SNS primeiro: aws sns create-topic --name documentdb-alerts",
-      "3. Confirme a subscription de email",
-      "4. Aplique as regras usando os comandos abaixo"
-    ],
-    "ApplyRules": {
-      "Failover": "aws events put-rule --name documentdb-failover-events --description 'Detectar eventos de failover' --event-pattern file://patterns/failover-pattern.json && aws events put-targets --rule documentdb-failover-events --targets file://targets/sns-target.json",
-      "Backup": "aws events put-rule --name documentdb-backup-events --description 'Monitorar backups' --event-pattern file://patterns/backup-pattern.json && aws events put-targets --rule documentdb-backup-events --targets file://targets/sns-target.json",
-      "Maintenance": "aws events put-rule --name documentdb-maintenance-events --description 'Alertas de manutenção' --event-pattern file://patterns/maintenance-pattern.json && aws events put-targets --rule documentdb-maintenance-events --targets file://targets/sns-target.json"
-    },
-    "TestRule": "aws events put-events --entries '[{\"Source\":\"aws.rds\",\"DetailType\":\"RDS DB Instance Event\",\"Detail\":\"{\\\"EventCategories\\\":[\\\"failover\\\"],\\\"SourceArn\\\":\\\"test-instance\\\",\\\"Message\\\":\\\"Test message\\\"}\"}]'",
-    "ListRules": "aws events list-rules --name-prefix documentdb-",
-    "DescribeRule": "aws events describe-rule --name documentdb-failover-events",
-    "DeleteRule": "aws events remove-targets --rule documentdb-failover-events --ids 1 && aws events delete-rule --name documentdb-failover-events"
-  },
-  "EventCategories": {
-    "availability": "Eventos relacionados à disponibilidade da instância",
-    "backup": "Eventos de backup e snapshot",
-    "configuration change": "Mudanças de configuração",
-    "creation": "Criação de recursos",
-    "deletion": "Deleção de recursos",
-    "failover": "Eventos de failover",
-    "failure": "Falhas do sistema",
-    "low storage": "Armazenamento baixo",
-    "maintenance": "Manutenção programada",
-    "notification": "Notificações gerais",
-    "recovery": "Recuperação de falhas",
-    "restoration": "Restauração de backups",
-    "security": "Eventos de segurança"
-  },
-  "BestPractices": [
-    "Configure múltiplas targets para regras críticas (SNS + Lambda + CloudWatch Logs)",
-    "Use Input Transformers para formatar mensagens de forma legível",
-    "Teste regras regularmente com put-events",
-    "Monitore métricas de entrega do EventBridge",
-    "Configure DLQ (Dead Letter Queue) para targets que podem falhar",
-    "Use tags para organizar regras por ambiente/criticidade",
-    "Documente runbooks para cada tipo de evento",
-    "Configure filtros específicos para reduzir ruído"
-  ]
+      "1. Substitua <seu-id> pelo seu identificador de aluno.",
+      "2. Substitua ACCOUNT_ID pelo ID da sua conta AWS.",
+      "3. Crie o tópico SNS primeiro: aws sns create-topic --name <seu-id>-documentdb-alerts",
+      "4. Aplique as regras usando os comandos da AWS CLI, substituindo os nomes e ARNs."
+    ]
+  }
 }

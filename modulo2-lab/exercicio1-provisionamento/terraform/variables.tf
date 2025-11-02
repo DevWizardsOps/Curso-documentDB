@@ -1,3 +1,8 @@
+variable "student_id" {
+  description = "Unique identifier for the student (e.g., 'johndoe'). Used to prefix resource names."
+  type        = string
+}
+
 variable "aws_region" {
   description = "AWS region where resources will be created"
   type        = string

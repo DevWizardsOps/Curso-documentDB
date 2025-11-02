@@ -4,243 +4,37 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/DocDB", "CPUUtilization", { "stat": "Average" } ]
+                    [ "AWS/DocDB", "CPUUtilization", "DBClusterIdentifier", "YOUR_CLUSTER_IDENTIFIER", { "stat": "Average" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-east-1",
-                "title": "CPU Utilization - All Instances",
-                "period": 300,
-                "yAxis": {
-                    "left": {
-                        "min": 0,
-                        "max": 100
-                    }
-                }
-            },
-            "width": 12,
-            "height": 6,
-            "x": 0,
-            "y": 0
+                "title": "CPU Utilization",
+                "period": 300
+            }
         },
         {
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/DocDB", "DatabaseConnections", { "stat": "Sum" } ]
+                    [ "AWS/DocDB", "DatabaseConnections", "DBClusterIdentifier", "YOUR_CLUSTER_IDENTIFIER", { "stat": "Sum" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-east-1",
                 "title": "Active Database Connections",
-                "period": 300,
-                "yAxis": {
-                    "left": {
-                        "min": 0
-                    }
-                }
-            },
-            "width": 12,
-            "height": 6,
-            "x": 12,
-            "y": 0
-        },
-        {
-            "type": "metric",
-            "properties": {
-                "metrics": [
-                    [ "AWS/DocDB", "ReadLatency", { "stat": "Average", "label": "Read Latency" } ],
-                    [ ".", "WriteLatency", { "stat": "Average", "label": "Write Latency" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "us-east-1",
-                "title": "Read/Write Latency (ms)",
-                "period": 300,
-                "yAxis": {
-                    "left": {
-                        "min": 0,
-                        "label": "Milliseconds"
-                    }
-                }
-            },
-            "width": 12,
-            "height": 6,
-            "x": 0,
-            "y": 6
-        },
-        {
-            "type": "metric",
-            "properties": {
-                "metrics": [
-                    [ "AWS/DocDB", "ReadThroughput", { "stat": "Average", "label": "Read" } ],
-                    [ ".", "WriteThroughput", { "stat": "Average", "label": "Write" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "us-east-1",
-                "title": "Read/Write Throughput (docs/sec)",
-                "period": 300,
-                "yAxis": {
-                    "left": {
-                        "min": 0
-                    }
-                }
-            },
-            "width": 12,
-            "height": 6,
-            "x": 12,
-            "y": 6
-        },
-        {
-            "type": "metric",
-            "properties": {
-                "metrics": [
-                    [ "AWS/DocDB", "DBClusterReplicaLagMaximum", { "stat": "Maximum", "label": "Max Lag" } ],
-                    [ ".", "DBClusterReplicaLagMinimum", { "stat": "Minimum", "label": "Min Lag" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "us-east-1",
-                "title": "Replica Lag (ms)",
-                "period": 300,
-                "yAxis": {
-                    "left": {
-                        "min": 0,
-                        "label": "Milliseconds"
-                    }
-                }
-            },
-            "width": 12,
-            "height": 6,
-            "x": 0,
-            "y": 12
-        },
-        {
-            "type": "metric",
-            "properties": {
-                "metrics": [
-                    [ "AWS/DocDB", "FreeableMemory", { "stat": "Average" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "us-east-1",
-                "title": "Freeable Memory (Bytes)",
-                "period": 300,
-                "yAxis": {
-                    "left": {
-                        "min": 0
-                    }
-                }
-            },
-            "width": 12,
-            "height": 6,
-            "x": 12,
-            "y": 12
-        },
-        {
-            "type": "metric",
-            "properties": {
-                "metrics": [
-                    [ "AWS/DocDB", "VolumeReadIOPs", { "stat": "Average", "label": "Read IOPS" } ],
-                    [ ".", "VolumeWriteIOPs", { "stat": "Average", "label": "Write IOPS" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "us-east-1",
-                "title": "Volume IOPS",
-                "period": 300,
-                "yAxis": {
-                    "left": {
-                        "min": 0
-                    }
-                }
-            },
-            "width": 12,
-            "height": 6,
-            "x": 0,
-            "y": 18
-        },
-        {
-            "type": "metric",
-            "properties": {
-                "metrics": [
-                    [ "AWS/DocDB", "VolumeBytesUsed", { "stat": "Average" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "us-east-1",
-                "title": "Volume Bytes Used",
-                "period": 3600,
-                "yAxis": {
-                    "left": {
-                        "min": 0
-                    }
-                }
-            },
-            "width": 12,
-            "height": 6,
-            "x": 12,
-            "y": 18
-        },
-        {
-            "type": "metric",
-            "properties": {
-                "metrics": [
-                    [ "AWS/DocDB", "NetworkReceiveThroughput", { "stat": "Average", "label": "Receive" } ],
-                    [ ".", "NetworkTransmitThroughput", { "stat": "Average", "label": "Transmit" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "us-east-1",
-                "title": "Network Throughput (Bytes/sec)",
-                "period": 300,
-                "yAxis": {
-                    "left": {
-                        "min": 0
-                    }
-                }
-            },
-            "width": 12,
-            "height": 6,
-            "x": 0,
-            "y": 24
-        },
-        {
-            "type": "metric",
-            "properties": {
-                "metrics": [
-                    [ "AWS/DocDB", "SwapUsage", { "stat": "Average" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "us-east-1",
-                "title": "Swap Usage (Bytes)",
-                "period": 300,
-                "yAxis": {
-                    "left": {
-                        "min": 0
-                    }
-                }
-            },
-            "width": 12,
-            "height": 6,
-            "x": 12,
-            "y": 24
+                "period": 300
+            }
         },
         {
             "type": "log",
             "properties": {
-                "query": "SOURCE '/aws/docdb/lab-cluster-console/audit'\n| fields @timestamp, @message\n| sort @timestamp desc\n| limit 20",
+                "query": "SOURCE '/aws/docdb/YOUR_CLUSTER_IDENTIFIER/audit'\n| fields @timestamp, @message\n| sort @timestamp desc\n| limit 20",
                 "region": "us-east-1",
                 "stacked": false,
                 "title": "Recent Audit Logs",
                 "view": "table"
-            },
-            "width": 24,
-            "height": 6,
-            "x": 0,
-            "y": 30
+            }
         }
     ]
 }

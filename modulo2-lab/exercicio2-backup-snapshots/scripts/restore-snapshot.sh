@@ -18,13 +18,13 @@ usage() {
     echo ""
     echo "Parâmetros:"
     echo "  snapshot-id      : ID do snapshot a ser restaurado"
-    echo "  novo-cluster-id  : ID do novo cluster a ser criado"
+    echo "  novo-cluster-id  : ID do novo cluster a ser criado (ex: seunome-cluster-restaurado)"
     echo "  instance-class   : Classe da instância (padrão: db.t3.medium)"
     echo "  instance-count   : Número de instâncias (padrão: 1)"
     echo ""
     echo "Exemplos:"
-    echo "  $0 lab-snapshot-001 lab-cluster-restored"
-    echo "  $0 lab-snapshot-001 lab-cluster-dev db.t3.medium 2"
+    echo "  $0 seunome-lab-snapshot-001 seunome-lab-cluster-restored"
+    echo "  $0 seunome-lab-snapshot-001 seunome-lab-cluster-dev db.t3.medium 2"
     exit 1
 }
 
@@ -37,11 +37,13 @@ SNAPSHOT_ID=$1
 NEW_CLUSTER_ID=$2
 INSTANCE_CLASS=${3:-db.t3.medium}
 INSTANCE_COUNT=${4:-1}
+STUDENT_ID=$(echo $NEW_CLUSTER_ID | cut -d'-' -f1)
 
 echo -e "${YELLOW}🔄 Restaurando snapshot do DocumentDB${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "📸 Snapshot ID:      ${SNAPSHOT_ID}"
 echo -e "🆕 Novo Cluster ID:  ${NEW_CLUSTER_ID}"
+echo -e "👤 Aluno ID:         ${STUDENT_ID}"
 echo -e "💻 Instance Class:   ${INSTANCE_CLASS}"
 echo -e "🔢 Instance Count:   ${INSTANCE_COUNT}"
 echo ""
@@ -88,48 +90,40 @@ echo "  VPC: ${VPC_ID}"
 echo ""
 
 # Obter subnet group e security group
-echo "🔍 Buscando subnet group e security group..."
+echo "🔍 Buscando subnet group e security group para o aluno '$STUDENT_ID'..."
 SUBNET_GROUP=$(aws docdb describe-db-subnet-groups \
-    --query "DBSubnetGroups[?VpcId=='${VPC_ID}'] | [0].DBSubnetGroupName" \
-    --output text)
+    --db-subnet-group-name "${STUDENT_ID}-docdb-lab-subnet-group" \
+    --query 'DBSubnetGroups[0].DBSubnetGroupName' --output text 2>/dev/null)
 
 if [ "$SUBNET_GROUP" == "None" ] || [ -z "$SUBNET_GROUP" ]; then
-    echo -e "${RED}❌ Erro: Nenhum subnet group encontrado para a VPC${NC}"
+    echo -e "${RED}❌ Erro: Nenhum subnet group encontrado com o nome '${STUDENT_ID}-docdb-lab-subnet-group'${NC}"
     exit 1
 fi
 
 echo -e "${GREEN}✓ Subnet Group: ${SUBNET_GROUP}${NC}"
 
-# Buscar security group (assumindo nome padrão do lab)
 SECURITY_GROUP=$(aws ec2 describe-security-groups \
-    --filters "Name=group-name,Values=*docdb*" "Name=vpc-id,Values=${VPC_ID}" \
+    --filters "Name=group-name,Values=${STUDENT_ID}-docdb-lab-sg" "Name=vpc-id,Values=${VPC_ID}" \
     --query 'SecurityGroups[0].GroupId' \
-    --output text)
+    --output text 2>/dev/null)
 
 if [ "$SECURITY_GROUP" == "None" ] || [ -z "$SECURITY_GROUP" ]; then
-    echo -e "${YELLOW}⚠️  Aviso: Security group padrão será usado${NC}"
-    SECURITY_GROUP=""
-else
-    echo -e "${GREEN}✓ Security Group: ${SECURITY_GROUP}${NC}"
+    echo -e "${RED}❌ Erro: Nenhum security group encontrado com o nome '${STUDENT_ID}-docdb-lab-sg'${NC}"
+    exit 1
 fi
 
+echo -e "${GREEN}✓ Security Group: ${SECURITY_GROUP}${NC}"
 echo ""
 
 # Restaurar o cluster
 echo "🚀 Restaurando cluster do snapshot..."
-RESTORE_CMD="aws docdb restore-db-cluster-from-snapshot \
+aws docdb restore-db-cluster-from-snapshot \
     --db-cluster-identifier $NEW_CLUSTER_ID \
     --snapshot-identifier $SNAPSHOT_ID \
     --engine $ENGINE \
-    --db-subnet-group-name $SUBNET_GROUP"
-
-if [ -n "$SECURITY_GROUP" ]; then
-    RESTORE_CMD="$RESTORE_CMD --vpc-security-group-ids $SECURITY_GROUP"
-fi
-
-RESTORE_CMD="$RESTORE_CMD --tags Key=RestoredFrom,Value=$SNAPSHOT_ID Key=RestoredAt,Value=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-eval $RESTORE_CMD
+    --db-subnet-group-name $SUBNET_GROUP \
+    --vpc-security-group-ids $SECURITY_GROUP \
+    --tags Key=RestoredFrom,Value=$SNAPSHOT_ID Key=Student,Value=$STUDENT_ID
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Cluster restaurado com sucesso!${NC}"
@@ -156,7 +150,7 @@ for i in $(seq 1 $INSTANCE_COUNT); do
         --db-instance-class "$INSTANCE_CLASS" \
         --db-cluster-identifier "$NEW_CLUSTER_ID" \
         --engine "$ENGINE" \
-        --tags Key=Instance,Value=$i > /dev/null
+        --tags Key=Instance,Value=$i Key=Student,Value=$STUDENT_ID > /dev/null
     
     if [ $? -eq 0 ]; then
         echo -e "  ${GREEN}✓ Instância ${i} criada${NC}"

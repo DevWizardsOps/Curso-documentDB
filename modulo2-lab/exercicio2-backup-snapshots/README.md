@@ -11,6 +11,8 @@
 ## ⏱️ Duração Estimada
 45 minutos
 
+> ⚠️ **Atenção:** Lembre-se de usar seu prefixo de aluno (`<seu-id>`) em todos os nomes de recursos e comandos, conforme definido no Exercício 1.
+
 ---
 
 ## 📚 Conceitos
@@ -34,7 +36,7 @@
 ### Via Console
 
 1. Acesse o console DocumentDB
-2. Selecione seu cluster
+2. Selecione seu cluster (`<seu-id>-lab-cluster-console`)
 3. Clique em **Modify**
 4. Em **Backup:**
    - **Backup retention period:** 7 dias
@@ -46,16 +48,16 @@
 ### Via AWS CLI
 
 ```bash
-# Modificar política de backup
+# Modificar política de backup (substitua <seu-id>)
 aws docdb modify-db-cluster \
-  --db-cluster-identifier lab-cluster-console \
+  --db-cluster-identifier <seu-id>-lab-cluster-console \
   --backup-retention-period 7 \
   --preferred-backup-window "03:00-04:00" \
   --apply-immediately
 
-# Verificar configuração
+# Verificar configuração (substitua <seu-id>)
 aws docdb describe-db-clusters \
-  --db-cluster-identifier lab-cluster-console \
+  --db-cluster-identifier <seu-id>-lab-cluster-console \
   --query 'DBClusters[0].[BackupRetentionPeriod, PreferredBackupWindow]' \
   --output table
 ```
@@ -66,44 +68,46 @@ aws docdb describe-db-clusters \
 
 ### Via Console
 
-1. No console DocumentDB, selecione o cluster
+1. No console DocumentDB, selecione o cluster `<seu-id>-lab-cluster-console`
 2. Clique em **Actions** → **Take snapshot**
 3. Configure:
-   - **Snapshot identifier:** `lab-snapshot-manual-001`
+   - **Snapshot identifier:** `<seu-id>-lab-snapshot-manual-001`
    - **Tags:** (opcional)
      - Key: `Purpose`, Value: `Lab Exercise`
+     - Key: `Student`, Value: `<seu-id>`
 4. Clique em **Take snapshot**
 5. Aguarde até status = **Available** (~5-10 minutos)
 
 ### Via AWS CLI
 
 ```bash
-# Criar snapshot
+# Criar snapshot (substitua <seu-id>)
 aws docdb create-db-cluster-snapshot \
-  --db-cluster-snapshot-identifier lab-snapshot-manual-001 \
-  --db-cluster-identifier lab-cluster-console \
-  --tags Key=Purpose,Value=LabExercise
+  --db-cluster-snapshot-identifier <seu-id>-lab-snapshot-manual-001 \
+  --db-cluster-identifier <seu-id>-lab-cluster-console \
+  --tags Key=Purpose,Value=LabExercise Key=Student,Value=<seu-id>
 
-# Verificar progresso
+# Verificar progresso (substitua <seu-id>)
 aws docdb describe-db-cluster-snapshots \
-  --db-cluster-snapshot-identifier lab-snapshot-manual-001 \
+  --db-cluster-snapshot-identifier <seu-id>-lab-snapshot-manual-001 \
   --query 'DBClusterSnapshots[0].[Status, PercentProgress]' \
   --output table
 
-# Listar todos os snapshots
+# Listar todos os seus snapshots manuais (substitua <seu-id>)
 aws docdb describe-db-cluster-snapshots \
-  --query 'DBClusterSnapshots[*].[DBClusterSnapshotIdentifier, Status, SnapshotCreateTime]' \
+  --snapshot-type manual \
+  --query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '<seu-id>')].[DBClusterSnapshotIdentifier, Status, SnapshotCreateTime]" \
   --output table
 ```
 
 ### Via Script
 
-Use o script fornecido:
+Use o script fornecido, passando o nome do seu cluster:
 
 ```bash
 cd scripts/
 chmod +x backup-manual.sh
-./backup-manual.sh lab-cluster-console
+./backup-manual.sh <seu-id>-lab-cluster-console
 ```
 
 ---
@@ -116,39 +120,39 @@ Você precisa criar um cluster de desenvolvimento a partir do snapshot de produ�
 ### Via Console
 
 1. No console DocumentDB, vá para **Snapshots**
-2. Selecione `lab-snapshot-manual-001`
+2. Selecione `<seu-id>-lab-snapshot-manual-001`
 3. Clique em **Actions** → **Restore snapshot**
 4. Configure:
-   - **DB cluster identifier:** `lab-cluster-restored`
+   - **DB cluster identifier:** `<seu-id>-lab-cluster-restored`
    - **DB instance class:** `db.t3.medium`
    - **Number of instances:** 1 (para economizar)
    - **VPC:** Mesma VPC
-   - **Subnet group:** `docdb-lab-subnet-group`
-   - **Security groups:** `docdb-lab-sg`
+   - **Subnet group:** `<seu-id>-docdb-lab-subnet-group`
+   - **Security groups:** `<seu-id>-docdb-lab-sg`
 5. Clique em **Restore DB cluster**
 6. Aguarde ~15-20 minutos
 
 ### Via AWS CLI
 
 ```bash
-# Restaurar snapshot
+# Restaurar snapshot (substitua <seu-id> e o ID do seu security group)
 aws docdb restore-db-cluster-from-snapshot \
-  --db-cluster-identifier lab-cluster-restored \
-  --snapshot-identifier lab-snapshot-manual-001 \
+  --db-cluster-identifier <seu-id>-lab-cluster-restored \
+  --snapshot-identifier <seu-id>-lab-snapshot-manual-001 \
   --engine docdb \
-  --db-subnet-group-name docdb-lab-subnet-group \
-  --vpc-security-group-ids sg-xxxxxxxx
+  --db-subnet-group-name <seu-id>-docdb-lab-subnet-group \
+  --vpc-security-group-ids <seu-sg-id>
 
-# Criar instância no cluster restaurado
+# Criar instância no cluster restaurado (substitua <seu-id>)
 aws docdb create-db-instance \
-  --db-instance-identifier lab-cluster-restored-1 \
+  --db-instance-identifier <seu-id>-lab-cluster-restored-1 \
   --db-instance-class db.t3.medium \
-  --db-cluster-identifier lab-cluster-restored \
+  --db-cluster-identifier <seu-id>-lab-cluster-restored \
   --engine docdb
 
-# Verificar restauração
+# Verificar restauração (substitua <seu-id>)
 aws docdb describe-db-clusters \
-  --db-cluster-identifier lab-cluster-restored \
+  --db-cluster-identifier <seu-id>-lab-cluster-restored \
   --query 'DBClusters[0].Status'
 ```
 
@@ -157,7 +161,7 @@ aws docdb describe-db-clusters \
 ```bash
 cd scripts/
 chmod +x restore-snapshot.sh
-./restore-snapshot.sh lab-snapshot-manual-001 lab-cluster-restored
+./restore-snapshot.sh <seu-id>-lab-snapshot-manual-001 <seu-id>-lab-cluster-restored
 ```
 
 ---
@@ -169,37 +173,37 @@ Permite restaurar o cluster para qualquer ponto no tempo dentro do período de r
 
 ### Via Console
 
-1. Selecione o cluster original
+1. Selecione o cluster original (`<seu-id>-lab-cluster-console`)
 2. **Actions** → **Restore to point in time**
 3. Configure:
    - **Restore to:** Custom date and time
    - **Date and time:** Escolha um momento específico
-   - **DB cluster identifier:** `lab-cluster-pitr`
+   - **DB cluster identifier:** `<seu-id>-lab-cluster-pitr`
    - Demais configurações similares
 4. Clique em **Restore DB cluster**
 
 ### Via AWS CLI
 
 ```bash
-# Obter janela de restauração disponível
+# Obter janela de restauração disponível (substitua <seu-id>)
 aws docdb describe-db-clusters \
-  --db-cluster-identifier lab-cluster-console \
+  --db-cluster-identifier <seu-id>-lab-cluster-console \
   --query 'DBClusters[0].[EarliestRestorableTime, LatestRestorableTime]' \
   --output table
 
-# Restaurar para ponto específico
+# Restaurar para ponto específico (substitua <seu-id> e o ID do seu security group)
 aws docdb restore-db-cluster-to-point-in-time \
-  --source-db-cluster-identifier lab-cluster-console \
-  --db-cluster-identifier lab-cluster-pitr \
+  --source-db-cluster-identifier <seu-id>-lab-cluster-console \
+  --db-cluster-identifier <seu-id>-lab-cluster-pitr \
   --restore-to-time "2025-11-01T20:00:00Z" \
-  --db-subnet-group-name docdb-lab-subnet-group \
-  --vpc-security-group-ids sg-xxxxxxxx
+  --db-subnet-group-name <seu-id>-docdb-lab-subnet-group \
+  --vpc-security-group-ids <seu-sg-id>
 
-# Adicionar instância
+# Adicionar instância (substitua <seu-id>)
 aws docdb create-db-instance \
-  --db-instance-identifier lab-cluster-pitr-1 \
+  --db-instance-identifier <seu-id>-lab-cluster-pitr-1 \
   --db-instance-class db.t3.medium \
-  --db-cluster-identifier lab-cluster-pitr \
+  --db-cluster-identifier <seu-id>-lab-cluster-pitr \
   --engine docdb
 ```
 
@@ -210,149 +214,52 @@ aws docdb create-db-instance \
 ### Listar Snapshots
 
 ```bash
-# Listar snapshots do cluster
+# Listar snapshots do seu cluster (substitua <seu-id>)
 aws docdb describe-db-cluster-snapshots \
-  --db-cluster-identifier lab-cluster-console
+  --db-cluster-identifier <seu-id>-lab-cluster-console
 
-# Listar todos os snapshots manuais
+# Listar todos os seus snapshots manuais (substitua <seu-id>)
 aws docdb describe-db-cluster-snapshots \
-  --snapshot-type manual
-
-# Listar snapshots automáticos
-aws docdb describe-db-cluster-snapshots \
-  --snapshot-type automated
-```
-
-### Copiar Snapshot para Outra Região
-
-```bash
-# Copiar snapshot
-aws docdb copy-db-cluster-snapshot \
-  --source-db-cluster-snapshot-identifier arn:aws:rds:us-east-1:123456789012:cluster-snapshot:lab-snapshot-manual-001 \
-  --target-db-cluster-snapshot-identifier lab-snapshot-copy-us-west-2 \
-  --region us-west-2
-```
-
-### Compartilhar Snapshot
-
-```bash
-# Tornar snapshot público (não recomendado)
-aws docdb modify-db-cluster-snapshot-attribute \
-  --db-cluster-snapshot-identifier lab-snapshot-manual-001 \
-  --attribute-name restore \
-  --values-to-add all
-
-# Compartilhar com conta específica
-aws docdb modify-db-cluster-snapshot-attribute \
-  --db-cluster-snapshot-identifier lab-snapshot-manual-001 \
-  --attribute-name restore \
-  --values-to-add 987654321098
+  --snapshot-type manual \
+  --query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '<seu-id>')].DBClusterSnapshotIdentifier"
 ```
 
 ### Deletar Snapshot Manual
 
 ```bash
-# Via CLI
+# Via CLI (substitua <seu-id>)
 aws docdb delete-db-cluster-snapshot \
-  --db-cluster-snapshot-identifier lab-snapshot-manual-001
-
-# Via Console
-# 1. Vá para Snapshots
-# 2. Selecione o snapshot
-# 3. Actions > Delete snapshot
-```
-
----
-
-## 📊 Parte 6: Monitorar Backups
-
-### Ver Tamanho dos Backups
-
-```bash
-# Tamanho total de backups
-aws docdb describe-db-cluster-snapshots \
-  --db-cluster-identifier lab-cluster-console \
-  --query 'DBClusterSnapshots[*].[DBClusterSnapshotIdentifier, AllocatedStorage]' \
-  --output table
-```
-
-### Verificar Último Backup
-
-```bash
-aws docdb describe-db-clusters \
-  --db-cluster-identifier lab-cluster-console \
-  --query 'DBClusters[0].[LatestRestorableTime, BackupRetentionPeriod]' \
-  --output table
+  --db-cluster-snapshot-identifier <seu-id>-lab-snapshot-manual-001
 ```
 
 ---
 
 ## ✅ Checklist de Conclusão
 
-- [ ] Política de backup configurada (7 dias)
-- [ ] Janela de backup definida
-- [ ] Snapshot manual criado com sucesso
-- [ ] Cluster restaurado a partir de snapshot
-- [ ] PITR testado (opcional)
-- [ ] Snapshots listados e verificados
-- [ ] Entendeu diferença entre backups automáticos e manuais
+- [ ] Política de backup configurada
+- [ ] Snapshot manual criado com prefixo
+- [ ] Cluster restaurado a partir de snapshot com prefixo
+- [ ] Entendeu como usar prefixos para isolar recursos
 
 ---
 
 ## 🧹 Limpeza
 
 ```bash
-# Deletar cluster restaurado
+# Deletar cluster restaurado (substitua <seu-id>)
 aws docdb delete-db-cluster \
-  --db-cluster-identifier lab-cluster-restored \
+  --db-cluster-identifier <seu-id>-lab-cluster-restored \
   --skip-final-snapshot
 
-# Deletar cluster PITR (se criado)
+# Deletar cluster PITR (se criado) (substitua <seu-id>)
 aws docdb delete-db-cluster \
-  --db-cluster-identifier lab-cluster-pitr \
+  --db-cluster-identifier <seu-id>-lab-cluster-pitr \
   --skip-final-snapshot
 
-# Deletar snapshot manual
+# Deletar snapshot manual (substitua <seu-id>)
 aws docdb delete-db-cluster-snapshot \
-  --db-cluster-snapshot-identifier lab-snapshot-manual-001
+  --db-cluster-snapshot-identifier <seu-id>-lab-snapshot-manual-001
 ```
-
----
-
-## 📝 Exercícios Extras
-
-1. **Automação:** Crie um Lambda para snapshots diários
-2. **Disaster Recovery:** Simule recuperação de desastre
-3. **Multi-região:** Configure replicação cross-region
-4. **Monitoramento:** Configure alarme quando backup falha
-
----
-
-## 💡 Best Practices
-
-- ✅ Mantenha 7-14 dias de retenção para produção
-- ✅ Crie snapshots antes de mudanças críticas
-- ✅ Teste restaurações regularmente
-- ✅ Use tags para organizar snapshots
-- ✅ Configure janela de backup em horário de baixo tráfego
-- ✅ Monitore falhas de backup
-- ✅ Considere snapshots cross-region para DR
-
----
-
-## 🆘 Troubleshooting
-
-**Backup está demorando muito**
-- Primeira backup é completo, subsequentes são incrementais
-- Verifique tamanho do cluster
-
-**Não consigo restaurar snapshot**
-- Verifique subnet group e security groups
-- Confirme que tem permissões IAM adequadas
-
-**Snapshot não aparece**
-- Snapshots manuais podem levar 5-10 min para ficarem disponíveis
-- Verifique região correta
 
 ---
 

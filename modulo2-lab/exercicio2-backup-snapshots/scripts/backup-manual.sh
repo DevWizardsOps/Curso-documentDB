@@ -47,6 +47,8 @@ fi
 echo -e "${GREEN}✓ Cluster encontrado${NC}"
 echo ""
 
+STUDENT_ID=$(echo $CLUSTER_ID | cut -d'-' -f1)
+
 # Criar snapshot
 echo "🚀 Criando snapshot..."
 aws docdb create-db-cluster-snapshot \
@@ -55,7 +57,8 @@ aws docdb create-db-cluster-snapshot \
     --tags \
         Key=CreatedBy,Value=backup-script \
         Key=CreatedAt,Value=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-        Key=Purpose,Value=manual-backup
+        Key=Purpose,Value=manual-backup \
+        Key=Student,Value=$STUDENT_ID
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Snapshot criado com sucesso!${NC}"

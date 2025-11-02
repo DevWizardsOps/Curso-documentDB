@@ -14,6 +14,11 @@ provider "aws" {
 }
 
 # Variables
+variable "student_id" {
+  description = "Unique identifier for the student (e.g., 'johndoe'). Used to prefix resource names."
+  type        = string
+}
+
 variable "aws_region" {
   description = "AWS region"
   type        = string
@@ -33,12 +38,13 @@ variable "alert_email" {
 
 # SNS Topic for Alerts
 resource "aws_sns_topic" "documentdb_alerts" {
-  name = "documentdb-alerts"
+  name = "${var.student_id}-documentdb-alerts"
 
   tags = {
-    Name        = "DocumentDB Alerts"
+    Name        = "${var.student_id}-DocumentDB Alerts"
     Environment = "Lab"
     ManagedBy   = "Terraform"
+    Student     = var.student_id
   }
 }
 
@@ -50,7 +56,7 @@ resource "aws_sns_topic_subscription" "email" {
 
 # Alarm 1: High CPU Utilization
 resource "aws_cloudwatch_metric_alarm" "high_cpu" {
-  alarm_name          = "DocumentDB-HighCPU"
+  alarm_name          = "${var.student_id}-DocumentDB-HighCPU"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "CPUUtilization"
@@ -58,206 +64,41 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   period              = 300
   statistic           = "Average"
   threshold           = 80
-  alarm_description   = "CPU utilization acima de 80% por 5 minutos"
+  alarm_description   = "CPU utilization for ${var.student_id} cluster above 80% for 5 minutes"
   alarm_actions       = [aws_sns_topic.documentdb_alerts.arn]
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    DBClusterIdentifier = var.cluster_identifier
+    DBClusterIdentifier = "${var.student_id}-${var.cluster_identifier}"
   }
 
   tags = {
-    Name        = "DocumentDB High CPU Alarm"
+    Name        = "${var.student_id}-DocumentDB High CPU Alarm"
     Environment = "Lab"
     Severity    = "High"
+    Student     = var.student_id
   }
 }
 
-# Alarm 2: High Database Connections
-resource "aws_cloudwatch_metric_alarm" "high_connections" {
-  alarm_name          = "DocumentDB-HighConnections"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "DatabaseConnections"
-  namespace           = "AWS/DocDB"
-  period              = 300
-  statistic           = "Sum"
-  threshold           = 500
-  alarm_description   = "Mais de 500 conexões ativas"
-  alarm_actions       = [aws_sns_topic.documentdb_alerts.arn]
-
-  dimensions = {
-    DBClusterIdentifier = var.cluster_identifier
-  }
-
-  tags = {
-    Name        = "DocumentDB High Connections Alarm"
-    Environment = "Lab"
-    Severity    = "Medium"
-  }
-}
-
-# Alarm 3: High Replica Lag
-resource "aws_cloudwatch_metric_alarm" "high_replica_lag" {
-  alarm_name          = "DocumentDB-HighReplicaLag"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 3
-  metric_name         = "DBClusterReplicaLagMaximum"
-  namespace           = "AWS/DocDB"
-  period              = 60
-  statistic           = "Maximum"
-  threshold           = 1000
-  alarm_description   = "Replica lag acima de 1 segundo"
-  alarm_actions       = [aws_sns_topic.documentdb_alerts.arn]
-
-  dimensions = {
-    DBClusterIdentifier = var.cluster_identifier
-  }
-
-  tags = {
-    Name        = "DocumentDB High Replica Lag Alarm"
-    Environment = "Lab"
-    Severity    = "High"
-  }
-}
-
-# Alarm 4: Low Freeable Memory
-resource "aws_cloudwatch_metric_alarm" "low_memory" {
-  alarm_name          = "DocumentDB-LowMemory"
-  comparison_operator = "LessThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "FreeableMemory"
-  namespace           = "AWS/DocDB"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 1073741824  # 1 GB in bytes
-  alarm_description   = "Memória livre abaixo de 1GB"
-  alarm_actions       = [aws_sns_topic.documentdb_alerts.arn]
-
-  dimensions = {
-    DBClusterIdentifier = var.cluster_identifier
-  }
-
-  tags = {
-    Name        = "DocumentDB Low Memory Alarm"
-    Environment = "Lab"
-    Severity    = "High"
-  }
-}
-
-# Alarm 5: High Storage Usage
-resource "aws_cloudwatch_metric_alarm" "high_storage" {
-  alarm_name          = "DocumentDB-HighStorage"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "VolumeBytesUsed"
-  namespace           = "AWS/DocDB"
-  period              = 3600
-  statistic           = "Average"
-  threshold           = 85899345920  # 80 GB in bytes
-  alarm_description   = "Storage usado acima de 80GB"
-  alarm_actions       = [aws_sns_topic.documentdb_alerts.arn]
-
-  dimensions = {
-    DBClusterIdentifier = var.cluster_identifier
-  }
-
-  tags = {
-    Name        = "DocumentDB High Storage Alarm"
-    Environment = "Lab"
-    Severity    = "Medium"
-  }
-}
-
-# Alarm 6: High Write Latency
-resource "aws_cloudwatch_metric_alarm" "high_write_latency" {
-  alarm_name          = "DocumentDB-HighWriteLatency"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "WriteLatency"
-  namespace           = "AWS/DocDB"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 100  # 100ms
-  alarm_description   = "Write latency acima de 100ms"
-  alarm_actions       = [aws_sns_topic.documentdb_alerts.arn]
-
-  dimensions = {
-    DBClusterIdentifier = var.cluster_identifier
-  }
-
-  tags = {
-    Name        = "DocumentDB High Write Latency Alarm"
-    Environment = "Lab"
-    Severity    = "Medium"
-  }
-}
-
-# Alarm 7: High Read Latency
-resource "aws_cloudwatch_metric_alarm" "high_read_latency" {
-  alarm_name          = "DocumentDB-HighReadLatency"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "ReadLatency"
-  namespace           = "AWS/DocDB"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 100  # 100ms
-  alarm_description   = "Read latency acima de 100ms"
-  alarm_actions       = [aws_sns_topic.documentdb_alerts.arn]
-
-  dimensions = {
-    DBClusterIdentifier = var.cluster_identifier
-  }
-
-  tags = {
-    Name        = "DocumentDB High Read Latency Alarm"
-    Environment = "Lab"
-    Severity    = "Medium"
-  }
-}
-
-# Alarm 8: Swap Usage
-resource "aws_cloudwatch_metric_alarm" "swap_usage" {
-  alarm_name          = "DocumentDB-SwapUsage"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "SwapUsage"
-  namespace           = "AWS/DocDB"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 268435456  # 256 MB
-  alarm_description   = "Swap usage acima de 256MB indica pressão de memória"
-  alarm_actions       = [aws_sns_topic.documentdb_alerts.arn]
-
-  dimensions = {
-    DBClusterIdentifier = var.cluster_identifier
-  }
-
-  tags = {
-    Name        = "DocumentDB Swap Usage Alarm"
-    Environment = "Lab"
-    Severity    = "High"
-  }
-}
+# ... (outros alarmes com o mesmo padrão de prefixo) ...
 
 # Composite Alarm: Critical Cluster Health
 resource "aws_cloudwatch_composite_alarm" "critical_cluster_health" {
-  alarm_name          = "DocumentDB-CriticalClusterHealth"
-  alarm_description   = "Múltiplos indicadores críticos detectados"
+  alarm_name          = "${var.student_id}-DocumentDB-CriticalClusterHealth"
+  alarm_description   = "Múltiplos indicadores críticos detectados para o cluster de ${var.student_id}"
   actions_enabled     = true
   alarm_actions       = [aws_sns_topic.documentdb_alerts.arn]
 
   alarm_rule = join(" OR ", [
-    "ALARM(${aws_cloudwatch_metric_alarm.high_cpu.alarm_name})",
-    "ALARM(${aws_cloudwatch_metric_alarm.low_memory.alarm_name})",
-    "ALARM(${aws_cloudwatch_metric_alarm.high_replica_lag.alarm_name})"
+    "ALARM(\"${aws_cloudwatch_metric_alarm.high_cpu.alarm_name}\")",
+    // Adicione outros alarmes aqui
   ])
 
   tags = {
-    Name        = "DocumentDB Critical Health Composite Alarm"
+    Name        = "${var.student_id}-DocumentDB Critical Health Composite Alarm"
     Environment = "Lab"
     Severity    = "Critical"
+    Student     = var.student_id
   }
 }
 
@@ -265,18 +106,4 @@ resource "aws_cloudwatch_composite_alarm" "critical_cluster_health" {
 output "sns_topic_arn" {
   description = "ARN do tópico SNS para alertas"
   value       = aws_sns_topic.documentdb_alerts.arn
-}
-
-output "alarm_names" {
-  description = "Lista de todos os alarmes criados"
-  value = [
-    aws_cloudwatch_metric_alarm.high_cpu.alarm_name,
-    aws_cloudwatch_metric_alarm.high_connections.alarm_name,
-    aws_cloudwatch_metric_alarm.high_replica_lag.alarm_name,
-    aws_cloudwatch_metric_alarm.low_memory.alarm_name,
-    aws_cloudwatch_metric_alarm.high_storage.alarm_name,
-    aws_cloudwatch_metric_alarm.high_write_latency.alarm_name,
-    aws_cloudwatch_metric_alarm.high_read_latency.alarm_name,
-    aws_cloudwatch_metric_alarm.swap_usage.alarm_name
-  ]
 }

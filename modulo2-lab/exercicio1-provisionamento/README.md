@@ -10,6 +10,8 @@
 ## ⏱️ Duração Estimada
 60 minutos
 
+> ⚠️ **Atenção:** Para evitar conflitos de nomes, todos os recursos criados neste laboratório devem ser prefixados com um identificador único seu (ex: seu nome ou iniciais). Ex: `seunome-docdb-lab-subnet-group`.
+
 ## 📚 Parte 1: Provisionamento via AWS Console
 
 ### Passo 1: Criar Subnet Group
@@ -18,7 +20,7 @@
 2. Navegue até **Subnet groups**
 3. Clique em **Create**
 4. Configure:
-   - **Name:** `docdb-lab-subnet-group`
+   - **Name:** `<seu-id>-docdb-lab-subnet-group`
    - **Description:** `Subnet group para laboratório`
    - **VPC:** Selecione a VPC padrão
    - **Availability Zones:** Selecione 2 ou mais AZs
@@ -29,7 +31,7 @@
 1. Acesse **EC2 > Security Groups**
 2. Clique em **Create security group**
 3. Configure:
-   - **Name:** `docdb-lab-sg`
+   - **Name:** `<seu-id>-docdb-lab-sg`
    - **Description:** `Security group para DocumentDB`
    - **VPC:** Mesma VPC do subnet group
 4. Adicione regra de entrada:
@@ -43,7 +45,7 @@
 2. Configure:
 
 **Configurações do Cluster:**
-- **Cluster identifier:** `lab-cluster-console`
+- **Cluster identifier:** `<seu-id>-lab-cluster-console`
 - **Engine version:** 5.0.0 (ou mais recente)
 - **Instance class:** `db.t3.medium`
 - **Number of instances:** 3 (1 primária + 2 réplicas)
@@ -53,8 +55,8 @@
 - **Master password:** `Lab12345!` (ou uma senha forte)
 
 **Configurações de Rede:**
-- **Subnet group:** `docdb-lab-subnet-group`
-- **Security group:** `docdb-lab-sg`
+- **Subnet group:** `<seu-id>-docdb-lab-subnet-group`
+- **Security group:** `<seu-id>-docdb-lab-sg`
 
 **Backup:**
 - **Backup retention period:** 7 dias
@@ -70,29 +72,38 @@
 ### Passo 4: Verificar o Cluster
 
 ```bash
-# Listar clusters
+# Listar clusters (substitua <seu-id>)
 aws docdb describe-db-clusters \
-  --query 'DBClusters[?DBClusterIdentifier==`lab-cluster-console`]'
+--query 'DBClusters[?DBClusterIdentifier==`<seu-id>-lab-cluster-console`]'
 
-# Obter endpoint de conexão
+# Obter endpoint de conexão (substitua <seu-id>)
 aws docdb describe-db-clusters \
-  --db-cluster-identifier lab-cluster-console \
-  --query 'DBClusters[0].Endpoint' \
-  --output text
+--db-cluster-identifier <seu-id>-lab-cluster-console \
+--query 'DBClusters[0].Endpoint' \
+--output text
 ```
 
 ### Passo 5: Testar Conexão
 
 ```bash
+# Definir ID
+ID="seu-id"
+
 # Baixar certificado SSL
 wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 
+# Pegar Endpoint do cluster
+ENDPOINT=$(aws docdb describe-db-clusters \
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].Endpoint' \
+--output text)
+
 # Conectar ao cluster (substitua o endpoint)
-mongosh --host lab-cluster-console.cluster-xxxxx.us-east-1.docdb.amazonaws.com:27017 \
-  --username docdbadmin \
-  --password Lab12345! \
-  --tls \
-  --tlsCAFile global-bundle.pem
+mongosh --host $ENDPOINT:27017 \
+--username docdbadmin \
+--password Lab12345! \
+--tls \
+--tlsCAFile global-bundle.pem
 ```
 
 ---
@@ -106,15 +117,16 @@ Siga processo de instalação do terraform conforme documentação oficial: http
 ### Passo 2: Revisar Configuração
 
 Abra e revise os arquivos:
-- `main.tf` - Recursos principais
+- `main.tf` - Recursos principais (agora com prefixo `student_id`)
 - `variables.tf` - Variáveis configuráveis
 - `outputs.tf` - Outputs do cluster
 
 ### Passo 3: Configurar Variáveis
 
-Crie um arquivo `terraform.tfvars`:
+Crie um arquivo `terraform.tfvars` com seu identificador único:
 
 ```hcl
+student_id         = "seunome" // IMPORTANTE: Use um ID único!
 cluster_identifier = "lab-cluster-terraform"
 master_username    = "docdbadmin"
 master_password    = "Lab12345!"
@@ -157,10 +169,10 @@ ENDPOINT=$(terraform output -raw cluster_endpoint)
 
 # Conectar
 mongosh --host $ENDPOINT:27017 \
-  --username docdbadmin \
-  --password Lab12345! \
-  --tls \
-  --tlsCAFile ../global-bundle.pem
+--username docdbadmin \
+--password Lab12345! \
+--tls \
+--tlsCAFile ../global-bundle.pem
 ```
 
 ---
@@ -181,10 +193,10 @@ mongosh --host $ENDPOINT:27017 \
 
 ## ✅ Checklist de Conclusão
 
-- [ ] Cluster via Console provisionado
+- [ ] Cluster via Console provisionado com prefixo
 - [ ] Conexão testada via Console
 - [ ] Terraform inicializado
-- [ ] Cluster via Terraform provisionado
+- [ ] Cluster via Terraform provisionado com prefixo
 - [ ] Conexão testada via Terraform
 - [ ] Outputs do Terraform verificados
 - [ ] Compreendeu diferenças entre abordagens
@@ -195,7 +207,7 @@ mongosh --host $ENDPOINT:27017 \
 
 ### Console:
 1. Vá para AWS DocumentDB Console
-2. Selecione o cluster `lab-cluster-console`
+2. Selecione o cluster `<seu-id>-lab-cluster-console`
 3. Actions > Delete
 4. Desmarque "Create final snapshot"
 5. Digite "delete me" e confirme
@@ -203,6 +215,7 @@ mongosh --host $ENDPOINT:27017 \
 ### Terraform:
 ```bash
 cd terraform/
+# O terraform destroy usará o .tfstate e as variáveis para remover os recursos corretos
 terraform destroy -auto-approve
 ```
 
@@ -227,7 +240,7 @@ terraform destroy -auto-approve
 - Confirme que está conectando da origem permitida
 
 **Terraform: Error creating cluster**
-- Verifique se já existe um cluster com o mesmo nome
+- Verifique se já existe um cluster com o mesmo nome (incluindo o prefixo)
 - Confirme que tem permissões IAM adequadas
 
 ---
