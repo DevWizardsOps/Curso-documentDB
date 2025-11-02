@@ -72,13 +72,16 @@
 ### Passo 4: Verificar o Cluster
 
 ```bash
+# Definir ID
+ID="seu-id"
+
 # Listar clusters (substitua <seu-id>)
 aws docdb describe-db-clusters \
---query 'DBClusters[?DBClusterIdentifier==`<seu-id>-lab-cluster-console`]'
+--db-cluster-identifier $ID-lab-cluster-console
 
 # Obter endpoint de conexão (substitua <seu-id>)
 aws docdb describe-db-clusters \
---db-cluster-identifier <seu-id>-lab-cluster-console \
+--db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].Endpoint' \
 --output text
 ```
@@ -86,9 +89,6 @@ aws docdb describe-db-clusters \
 ### Passo 5: Testar Conexão
 
 ```bash
-# Definir ID
-ID="seu-id"
-
 # Baixar certificado SSL
 wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 
