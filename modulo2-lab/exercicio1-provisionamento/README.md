@@ -193,24 +193,41 @@ mongosh --host $ENDPOINT:27017 \
 
 ## ✅ Checklist de Conclusão
 
-- [ ] Cluster via Console provisionado com prefixo
-- [ ] Conexão testada via Console
-- [ ] Terraform inicializado
-- [ ] Cluster via Terraform provisionado com prefixo
-- [ ] Conexão testada via Terraform
-- [ ] Outputs do Terraform verificados
-- [ ] Compreendeu diferenças entre abordagens
+Execute o script de validação a partir do diretório home do usuário.
+
+```bash
+# Obter endpoint do Terraform
+./validation_script.sh
+```
+
+O resultado do script vai apresentar uma resposta nesse formato:
+
+```bash
+Iniciando script de validação para o Exercício 1...
+Por favor, insira seu ID de aluno (o prefixo usado nos recursos): aluno01
+
+--- Checando Recursos do Console ---
+- Cluster via Console 'aluno01-lab-cluster-console' existe... OK
+- Security Group 'aluno01-docdb-lab-sg' existe... OK
+- Subnet Group 'aluno01-docdb-lab-subnet-group' existe... OK
+
+--- Checando Recursos do Terraform ---
+- Cluster via Terraform 'aluno01-lab-cluster-terraform' existe... OK
+- Arquivo de estado do Terraform encontrado em './terraform/terraform.tfstate'... OK
+
+--- Checando Conectividade ---
+
+Digite a senha do DocumentDB (docdbadmin): 
+
+- Testando conexão com cluster 'aluno01-lab-cluster-console'... OK
+- Testando conexão com cluster 'aluno01-lab-cluster-terraform'... OK
+
+Validação concluída!
+```
 
 ---
 
 ## 🧹 Limpeza
-
-### Console:
-1. Vá para AWS DocumentDB Console
-2. Selecione o cluster `<seu-id>-lab-cluster-console`
-3. Actions > Delete
-4. Desmarque "Create final snapshot"
-5. Digite "delete me" e confirme
 
 ### Terraform:
 ```bash
@@ -218,15 +235,6 @@ cd terraform/
 # O terraform destroy usará o .tfstate e as variáveis para remover os recursos corretos
 terraform destroy -auto-approve
 ```
-
----
-
-## 📝 Exercícios Extras
-
-1. **Modificar instâncias:** Altere o instance_class para `db.r5.large`
-2. **Adicionar tags:** Adicione tags customizadas ao cluster
-3. **Multi-região:** Crie um cluster em outra região
-4. **Parameter group:** Crie um parameter group customizado
 
 ---
 
