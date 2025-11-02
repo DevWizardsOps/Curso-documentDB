@@ -35,7 +35,7 @@
 4. Adicione regra de entrada:
    - **Type:** Custom TCP
    - **Port:** 27017
-   - **Source:** Seu IP ou security group da aplicação
+   - **Source:** IP da sua instância EC2 (DocumentDB não expõe IP Público) ou security group da aplicação
 
 ### Passo 3: Criar o Cluster
 
@@ -99,12 +99,9 @@ mongosh --host lab-cluster-console.cluster-xxxxx.us-east-1.docdb.amazonaws.com:2
 
 ## 📚 Parte 2: Provisionamento via Terraform
 
-### Passo 1: Inicializar Terraform
+### Passo 1: Instalar
 
-```bash
-cd terraform/
-terraform init
-```
+Siga processo de instalação do terraform conforme documentação oficial: https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli
 
 ### Passo 2: Revisar Configuração
 
@@ -125,9 +122,16 @@ instance_count     = 3
 instance_class     = "db.t3.medium"
 ```
 
-### Passo 4: Planejar e Aplicar
+### Passo 4: Inicializar Planejar e Aplicar
+
+Após instalado e arquivos configurados, inicialize o Terraform visualize o plano e aplique as mudanças.
 
 ```bash
+cd terraform/
+
+# Inicializar o Terraform
+terraform init
+
 # Visualizar o plano
 terraform plan
 
