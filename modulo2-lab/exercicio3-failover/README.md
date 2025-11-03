@@ -160,8 +160,9 @@ Depois de editar, execute os comandos:
 ID=<seu-id>
 
 cd exemplos/
-sudo dnf install npm -y
+sudo dnf install npm wget -y
 npm install mongodb
+wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 
 # Executar aplicação de teste
 node connection-failover.js
