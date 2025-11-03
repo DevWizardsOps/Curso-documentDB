@@ -12,7 +12,7 @@
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "us-east-1",
+                "region": "us-east-2",
                 "title": "CPU Utilization (%)",
                 "period": 300,
                 "yAxis": {
@@ -35,7 +35,7 @@
                 ],
                 "view": "singleValue",
                 "stacked": false,
-                "region": "us-east-1",
+                "region": "us-east-2",
                 "title": "Active Connections",
                 "period": 300
             }
@@ -53,7 +53,7 @@
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "us-east-1",
+                "region": "us-east-2",
                 "title": "Read/Write Latency (ms)",
                 "period": 300,
                 "yAxis": {
@@ -76,7 +76,7 @@
                 ],
                 "view": "timeSeries",
                 "stacked": true,
-                "region": "us-east-1",
+                "region": "us-east-2",
                 "title": "Network Throughput (Bytes/sec)",
                 "period": 300,
                 "yAxis": {
@@ -99,7 +99,7 @@
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "us-east-1",
+                "region": "us-east-2",
                 "title": "Volume Read/Write IOPs",
                 "period": 300,
                 "yAxis": {
