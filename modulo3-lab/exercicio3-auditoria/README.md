@@ -1,4 +1,4 @@
-# Exercício 3: Auditoria com CloudTrail
+# Exercício 3: Auditoria
 
 Neste exercício, vamos habilitar e inspecionar os logs de auditoria para o DocumentDB, garantindo a rastreabilidade de eventos importantes que ocorrem no cluster.
 
@@ -154,7 +154,3 @@ Neste exercício, vamos habilitar e inspecionar os logs de auditoria para o Docu
     }
   }
   ```
-
-### 5. (Opcional) Criar um Trail no CloudTrail para Eventos de Dados
-- **Objetivo:** Ter um registro de auditoria de longo prazo e mais detalhado para eventos de dados (operações de leitura e escrita).
-- **Ação:** Use o script `scripts/create_data_event_trail.sh` para criar um Trail que capture eventos de dados para o seu cluster DocumentDB.
