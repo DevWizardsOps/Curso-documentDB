@@ -129,13 +129,30 @@ Neste exercício, vamos habilitar e inspecionar os logs de auditoria para o Docu
   **Log de Operação DML (insert):**
   ```json
   {
-    "atype": "insert",
+    "atype": "authCheck",
     "ts": 1762630700000,
-    "remote_ip": "172.31.31.150:36850",
-    "user": "docdbadmin",
+    "timestamp_utc": "2025-11-08 19:44:36.486",
+    "remote_ip": "172.31.31.150:51382",
+    "users": [
+      {
+        "user": "docdbadmin",
+        "db": "testdb"
+      }
+    ],
     "param": {
+      "command": "insert",
       "ns": "testdb.users",
-      "o": {"name": "João", "email": "joao@example.com"}
+      "args": {
+        "insert": "users",
+        "documents": [
+          {
+            "name": "João",
+            "email": "joao@example.com"
+          }
+        ],
+        "ordered": true
+      },
+      "result": 0
     }
   }
   ```
@@ -143,14 +160,96 @@ Neste exercício, vamos habilitar e inspecionar os logs de auditoria para o Docu
   **Log de Operação DML (update):**
   ```json
   {
-    "atype": "update",
+    "atype": "authCheck",
     "ts": 1762630710000,
-    "remote_ip": "172.31.31.150:36850",
-    "user": "docdbadmin",
+    "timestamp_utc": "2025-11-08 19:45:10.000",
+    "remote_ip": "172.31.31.150:51382",
+    "users": [
+      {
+        "user": "docdbadmin",
+        "db": "testdb"
+      }
+    ],
     "param": {
+      "command": "update",
       "ns": "testdb.users",
-      "o": {"$set": {"email": "joao.silva@example.com"}},
-      "o2": {"name": "João"}
+      "args": {
+        "update": "users",
+        "updates": [
+          {
+            "q": {
+              "name": "João"
+            },
+            "u": {
+              "$set": {
+                "email": "joao.silva@example.com"
+              }
+            }
+          }
+        ],
+        "ordered": true
+      },
+      "result": 0
+    }
+  }
+  ```
+
+  **Log de Operação DML (delete):**
+  ```json
+  {
+    "atype": "authCheck",
+    "ts": 1762631076486,
+    "timestamp_utc": "2025-11-08 19:44:36.486",
+    "remote_ip": "172.31.31.150:51382",
+    "users": [
+      {
+        "user": "docdbadmin",
+        "db": "testdb"
+      }
+    ],
+    "param": {
+      "command": "delete",
+      "ns": "testdb.users",
+      "args": {
+        "delete": "users",
+        "deletes": [
+          {
+            "q": {
+              "name": "João"
+            },
+            "limit": 1
+          }
+        ],
+        "ordered": true
+      },
+      "result": 0
+    }
+  }
+  ```
+
+  **Log de Operação DML (find):**
+  ```json
+  {
+    "atype": "authCheck",
+    "ts": 1762630720000,
+    "timestamp_utc": "2025-11-08 19:45:20.000",
+    "remote_ip": "172.31.31.150:51382",
+    "users": [
+      {
+        "user": "docdbadmin",
+        "db": "testdb"
+      }
+    ],
+    "param": {
+      "command": "find",
+      "ns": "testdb.users",
+      "args": {
+        "find": "users",
+        "filter": {
+          "name": "João"
+        }
+      },
+      "result": 0
     }
   }
   ```
