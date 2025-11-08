@@ -128,19 +128,48 @@ check_ssl_certificate() {
         if openssl x509 -in global-bundle.pem -text -noout &> /dev/null; then
             print_result "PASS" "Certificado SSL válido"
         else
-            print_result "WARN" "Certificado SSL pode estar corrompido"
+            print_result "WARN" "Certificado SSL pode estar corrompido - fazendo novo download"
+            rm -f global-bundle.pem
+            download_certificate
         fi
     else
-        print_result "INFO" "Baixando certificado SSL..."
-        if wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem; then
-            print_result "PASS" "Certificado SSL baixado com sucesso"
-        else
-            print_result "FAIL" "Falha ao baixar certificado SSL"
-            exit 1
-        fi
+        print_result "INFO" "Certificado SSL não encontrado - fazendo download..."
+        download_certificate
     fi
     
     echo
+}
+
+# Função auxiliar para fazer download do certificado
+download_certificate() {
+    local cert_url="https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem"
+    
+    # Tentar com wget primeiro
+    if command -v wget &> /dev/null; then
+        print_result "INFO" "Baixando certificado com wget..."
+        if wget -q "$cert_url" -O global-bundle.pem; then
+            print_result "PASS" "Certificado SSL baixado com sucesso (wget)"
+            return 0
+        else
+            print_result "WARN" "Falha no download com wget, tentando curl..."
+        fi
+    fi
+    
+    # Tentar com curl se wget falhou ou não está disponível
+    if command -v curl &> /dev/null; then
+        print_result "INFO" "Baixando certificado com curl..."
+        if curl -s "$cert_url" -o global-bundle.pem; then
+            print_result "PASS" "Certificado SSL baixado com sucesso (curl)"
+            return 0
+        else
+            print_result "WARN" "Falha no download com curl"
+        fi
+    fi
+    
+    # Se ambos falharam
+    print_result "FAIL" "Falha ao baixar certificado SSL"
+    print_result "INFO" "Baixe manualmente de: $cert_url"
+    exit 1
 }
 
 # Função para testar conexão com usuário mestre
