@@ -110,6 +110,9 @@ aws cloudwatch list-dashboards \
 ### Passo 1: Criar Tópico SNS
 
 ```bash
+ACCOUNT_ID=396739911713
+REGION=us-east-2
+
 # Criar tópico SNS (substitua <seu-id>)
 aws sns create-topic \
 --name $ID-documentdb-alerts
@@ -121,13 +124,39 @@ TOPIC_ARN=$(aws sns list-topics \
 
 echo "Topic ARN: $TOPIC_ARN"
 
-# Adicionar seu email como subscriber
+RULE_ARN="arn:aws:events:${REGION}:${ACCOUNT_ID}:rule/${ID}-documentdb-failover-events"
+
+# Cria JSON da policy para permitir o EventBridge publicar eventos na fila de Notificações
+read -r -d '' SNS_POLICY <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowEventBridgeToPublish",
+      "Effect": "Allow",
+      "Principal": { "Service": "events.amazonaws.com" },
+      "Action": "sns:Publish",
+      "Resource": "${TOPIC_ARN}",
+      "Condition": { "ArnEquals": { "aws:SourceArn": "${RULE_ARN}" } }
+    }
+  ]
+}
+EOF
+
+# Adiciona policy policy ao tópico SNS
+aws sns set-topic-attributes \
+  --topic-arn "$TOPIC_ARN" \
+  --attribute-name Policy \
+  --attribute-value "$SNS_POLICY"
+
+
+# Adicionar seu email como subscriber desse tópico (substitua pelo seu endereço de email)
 aws sns subscribe \
 --topic-arn $TOPIC_ARN \
 --protocol email \
 --notification-endpoint seu-email@example.com
 
-# Confirme o email que você recebeu!
+# Confirme o email que você recebeu! para o registro ser realizado.
 ```
 
 ### Passo 2: Alarmes Essenciais
@@ -162,7 +191,7 @@ aws events put-rule \
 --name "${ID}-documentdb-failover-events" \
 --description "Detectar eventos de failover para o aluno ${ID}" \
 --event-pattern "$(jq -n --arg id "$ID" '{
-  source: ["aws.docdb"],
+  source: ["aws.rds"],
   "detail-type": ["DocumentDB DB Instance Event"],
   detail: {
     EventCategories: ["failover"],
