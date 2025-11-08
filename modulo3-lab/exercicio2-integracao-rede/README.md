@@ -131,7 +131,15 @@ O Amazon DocumentDB foi projetado para ser um serviço **exclusivamente privado*
 export ID="seu-nome"
 
 # Obter informações do cluster
-aws docdb describe-db-clusters --db-cluster-identifier $ID-lab-cluster-console --query 'DBClusters[0].[DBClusterIdentifier,VpcSecurityGroups,DBSubnetGroup,VpcId]' --output table
+aws docdb describe-db-clusters \
+  --db-cluster-identifier "$ID-lab-cluster-console" \
+  --query 'DBClusters[].{
+    Cluster: DBClusterIdentifier,
+    SubnetGroup: DBSubnetGroup,
+    SGs: join(`,`, VpcSecurityGroups[].VpcSecurityGroupId)
+  }' \
+  --output table
+
 ```
 
 ### 1. Identificar Tipos de Subnets na VPC
