@@ -1,0 +1,155 @@
+{
+    "_description": "Exemplo de configuração completa de Security Groups para DocumentDB",
+    "_best_practices": [
+        "Use Security Groups específicos para cada camada (DB, App, Web)",
+        "Implemente regras bidirecionais (inbound + outbound)",
+        "Documente todas as regras com descrições claras",
+        "Revise periodicamente e remova regras desnecessárias"
+    ],
+
+    "documentdb_security_group": {
+        "GroupName": "docdb-secure-sg",
+        "Description": "Security Group restritivo para DocumentDB",
+        "VpcId": "vpc-12345678",
+        
+        "InboundRules": [
+            {
+                "IpProtocol": "tcp",
+                "FromPort": 27017,
+                "ToPort": 27017,
+                "UserIdGroupPairs": [
+                    {
+                        "GroupId": "sg-app-tier",
+                        "Description": "Acesso da camada de aplicação"
+                    }
+                ]
+            }
+        ],
+        
+        "OutboundRules": [
+            {
+                "_comment": "Regras de saída restritivas (opcional)",
+                "IpProtocol": "-1",
+                "CidrIp": "0.0.0.0/0",
+                "Description": "Permitir todo tráfego de saída"
+            }
+        ]
+    },
+
+    "application_security_group": {
+        "GroupName": "app-tier-sg", 
+        "Description": "Security Group para servidores de aplicação",
+        "VpcId": "vpc-12345678",
+        
+        "InboundRules": [
+            {
+                "IpProtocol": "tcp",
+                "FromPort": 22,
+                "ToPort": 22,
+                "CidrIp": "10.0.0.0/8",
+                "Description": "SSH apenas da rede interna"
+            },
+            {
+                "IpProtocol": "tcp", 
+                "FromPort": 8080,
+                "ToPort": 8080,
+                "UserIdGroupPairs": [
+                    {
+                        "GroupId": "sg-web-tier",
+                        "Description": "HTTP da camada web"
+                    }
+                ]
+            }
+        ],
+        
+        "OutboundRules": [
+            {
+                "IpProtocol": "tcp",
+                "FromPort": 27017,
+                "ToPort": 27017,
+                "UserIdGroupPairs": [
+                    {
+                        "GroupId": "sg-docdb-secure",
+                        "Description": "Acesso ao DocumentDB"
+                    }
+                ]
+            },
+            {
+                "IpProtocol": "tcp",
+                "FromPort": 443,
+                "ToPort": 443,
+                "CidrIp": "0.0.0.0/0",
+                "Description": "HTTPS para APIs externas"
+            }
+        ]
+    },
+
+    "web_security_group": {
+        "GroupName": "web-tier-sg",
+        "Description": "Security Group para servidores web",
+        "VpcId": "vpc-12345678",
+        
+        "InboundRules": [
+            {
+                "IpProtocol": "tcp",
+                "FromPort": 80,
+                "ToPort": 80,
+                "CidrIp": "0.0.0.0/0",
+                "Description": "HTTP público"
+            },
+            {
+                "IpProtocol": "tcp",
+                "FromPort": 443,
+                "ToPort": 443,
+                "CidrIp": "0.0.0.0/0", 
+                "Description": "HTTPS público"
+            }
+        ],
+        
+        "OutboundRules": [
+            {
+                "IpProtocol": "tcp",
+                "FromPort": 8080,
+                "ToPort": 8080,
+                "UserIdGroupPairs": [
+                    {
+                        "GroupId": "sg-app-tier",
+                        "Description": "Comunicação com app tier"
+                    }
+                ]
+            }
+        ]
+    },
+
+    "_security_matrix": {
+        "description": "Matriz de comunicação entre camadas",
+        "rules": {
+            "Web -> App": "Port 8080 (HTTP interno)",
+            "App -> DocumentDB": "Port 27017 (MongoDB protocol)",
+            "Admin -> App": "Port 22 (SSH) apenas de IPs internos",
+            "Internet -> Web": "Ports 80/443 (HTTP/HTTPS público)"
+        }
+    },
+
+    "_aws_cli_examples": {
+        "create_security_group": {
+            "command": "aws ec2 create-security-group",
+            "example": "aws ec2 create-security-group --group-name docdb-secure-sg --description 'DocumentDB Security Group' --vpc-id vpc-12345678"
+        },
+        
+        "add_inbound_rule": {
+            "command": "aws ec2 authorize-security-group-ingress", 
+            "example": "aws ec2 authorize-security-group-ingress --group-id sg-12345678 --protocol tcp --port 27017 --source-group sg-87654321"
+        },
+        
+        "add_outbound_rule": {
+            "command": "aws ec2 authorize-security-group-egress",
+            "example": "aws ec2 authorize-security-group-egress --group-id sg-12345678 --protocol tcp --port 27017 --source-group sg-docdb"
+        },
+        
+        "remove_rule": {
+            "command": "aws ec2 revoke-security-group-ingress",
+            "example": "aws ec2 revoke-security-group-ingress --group-id sg-12345678 --protocol tcp --port 27017 --cidr 0.0.0.0/0"
+        }
+    }
+}

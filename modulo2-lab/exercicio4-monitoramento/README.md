@@ -162,8 +162,8 @@ aws events put-rule \
 --name "${ID}-documentdb-failover-events" \
 --description "Detectar eventos de failover para o aluno ${ID}" \
 --event-pattern "$(jq -n --arg id "$ID" '{
-  source: ["aws.rds"],
-  "detail-type": ["RDS DB Instance Event"],
+  source: ["aws.docdb"],
+  "detail-type": ["DocumentDB DB Instance Event"],
   detail: {
     EventCategories: ["failover"],
     SourceIdentifier: [{prefix: "\($id)-"}]
@@ -179,7 +179,7 @@ aws events put-targets \
 
 ## ✅ Checklist de Conclusão
 
-Execute o script de validação a partir do diretório home do usuário.
+Execute o script de validação a partir do diretório home do usuário, no diretório do exercício 4 do módulo 2.
 
 ```bash
 # Executa o grade para avaliar atividades

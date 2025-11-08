@@ -75,7 +75,7 @@ aws docdb failover-db-cluster \
 echo "Failover iniciado! Monitorando..."
 
 # Monitorar até completar (substitua <seu-id>)
-aws docdb wait db-cluster-available --db-cluster-identifier $ID-lab-cluster-console
+aws rds wait db-cluster-available --db-cluster-identifier $ID-lab-cluster-console
 
 echo "Failover concluído!"
 
@@ -176,7 +176,7 @@ aws docdb failover-db-cluster \
 
 ## ✅ Checklist de Conclusão
 
-Execute o script de validação a partir do diretório home do usuário.
+Execute o script de validação a partir do diretório home do usuário, no diretório do exercício 3 do módulo 2.
 
 ```bash
 # Executa o grade para avaliar atividades

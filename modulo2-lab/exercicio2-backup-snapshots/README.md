@@ -152,7 +152,7 @@ echo "Security Group ID: $SG_ID"
 
 # Restaurar snapshot (substitua <seu-id> e o ID do seu security group)
 aws docdb restore-db-cluster-from-snapshot \
---db-cluster-identifier $ID-lab-cluster-restored \
+--db-cluster-identifier $ID-lab-cluster-restored-1 \
 --snapshot-identifier $ID-lab-snapshot-manual-001 \
 --engine docdb \
 --db-subnet-group-name $ID-docdb-lab-subnet-group \
@@ -163,6 +163,13 @@ aws docdb create-db-instance \
 --db-instance-identifier $ID-lab-cluster-restored-1 \
 --db-instance-class db.t3.medium \
 --db-cluster-identifier $ID-lab-cluster-restored \
+--engine docdb
+
+# Criar instância no cluster restaurado (substitua <seu-id>)
+aws docdb create-db-instance \
+--db-instance-identifier $ID-lab-cluster-restored-1 \
+--db-instance-class db.t3.medium \
+--db-cluster-identifier $ID-lab-cluster-restored-1 \
 --engine docdb
 
 # Verificar restauração (substitua <seu-id>)
@@ -250,7 +257,7 @@ aws docdb describe-db-cluster-snapshots \
 
 ## ✅ Checklist de Conclusão
 
-Execute o script de validação a partir do diretório home do usuário.
+Execute o script de validação a partir do diretório home do usuário, no diretório do exercício 2 do módulo 2.
 
 ```bash
 # Executa o grade para avaliar atividades

@@ -432,7 +432,7 @@ generate_report() {
     echo -e "   • Dashboard: Crie via Console ou CLI com prefixo ${STUDENT_ID}"
     echo -e "   • SNS: aws sns create-topic --name ${STUDENT_ID}-documentdb-alerts"
     echo -e "   • Alarmes: Configure com dimensão DBClusterIdentifier=${STUDENT_ID}-lab-cluster-console"
-    echo -e "   • EventBridge: Crie regras com prefixo ${STUDENT_ID} e pattern para eventos RDS"
+    echo -e "   • EventBridge: Crie regras com prefixo ${STUDENT_ID} e pattern para eventos DocumentDB"
 }
 
 # Função principal

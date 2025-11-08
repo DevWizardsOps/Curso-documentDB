@@ -4,13 +4,21 @@
       "Name": "<seu-id>-documentdb-failover-events",
       "Description": "Detectar eventos de failover do DocumentDB para <seu-id>",
       "EventPattern": {
-        "source": ["aws.rds"],
-        "detail-type": ["RDS DB Instance Event"],
+        "source": [
+          "aws.docdb"
+        ],
+        "detail-type": [
+          "DocumentDB DB Instance Event"
+        ],
         "detail": {
-          "EventCategories": ["failover"],
-          "SourceIdentifier": [{
-            "prefix": "<seu-id>-"
-          }]
+          "EventCategories": [
+            "failover"
+          ],
+          "SourceIdentifier": [
+            {
+              "prefix": "<seu-id>-"
+            }
+          ]
         }
       },
       "State": "ENABLED",
@@ -25,13 +33,21 @@
       "Name": "<seu-id>-documentdb-backup-events",
       "Description": "Monitorar eventos de backup do DocumentDB para <seu-id>",
       "EventPattern": {
-        "source": ["aws.rds"],
-        "detail-type": ["RDS DB Cluster Snapshot Event"],
+        "source": [
+          "aws.docdb"
+        ],
+        "detail-type": [
+          "DocumentDB DB Cluster Snapshot Event"
+        ],
         "detail": {
-          "EventCategories": ["backup"],
-          "SourceIdentifier": [{
-            "prefix": "<seu-id>-"
-          }]
+          "EventCategories": [
+            "backup"
+          ],
+          "SourceIdentifier": [
+            {
+              "prefix": "<seu-id>-"
+            }
+          ]
         }
       },
       "State": "ENABLED",

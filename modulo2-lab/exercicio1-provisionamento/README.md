@@ -123,6 +123,10 @@ Abra e revise os arquivos:
 
 ### Passo 3: Configurar Variáveis
 
+```bash
+cd terraform/
+```
+
 Crie um arquivo `terraform.tfvars` com seu identificador único:
 
 ```hcl
@@ -193,7 +197,7 @@ mongosh --host $ENDPOINT:27017 \
 
 ## ✅ Checklist de Conclusão
 
-Execute o script de validação a partir do diretório home do usuário.
+Execute o script de validação a partir do diretório home do usuário, dentro do diretório exercicio1 do módulo2.
 
 ```bash
 # Executa o grade para avaliar atividades

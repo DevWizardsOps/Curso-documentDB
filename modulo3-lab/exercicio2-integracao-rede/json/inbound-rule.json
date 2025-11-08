@@ -1,0 +1,41 @@
+{
+    "_comment": "Exemplo de regra de entrada restritiva para DocumentDB",
+    "_description": "Esta regra permite acesso apenas de um Security Group específico",
+    
+    "GroupId": "sg-0123456789abcdef0",
+    "_groupId_comment": "ID do Security Group do DocumentDB (substitua pelo real)",
+    
+    "IpPermissions": [
+        {
+            "FromPort": 27017,
+            "ToPort": 27017,
+            "IpProtocol": "tcp",
+            "_port_comment": "Porta padrão do DocumentDB (27017)",
+            
+            "UserIdGroupPairs": [
+                {
+                    "GroupId": "sg-fedcba9876543210f",
+                    "_source_comment": "ID do Security Group da aplicação cliente",
+                    "Description": "Acesso restrito apenas de aplicações autorizadas"
+                }
+            ]
+        }
+    ],
+    
+    "_security_notes": [
+        "Esta configuração implementa o princípio do menor privilégio",
+        "Apenas recursos no Security Group especificado podem conectar",
+        "Não use 0.0.0.0/0 em produção - é inseguro",
+        "Sempre documente o propósito de cada regra"
+    ],
+    
+    "_usage_example": {
+        "command": "aws ec2 authorize-security-group-ingress",
+        "parameters": {
+            "group-id": "sg-0123456789abcdef0",
+            "protocol": "tcp", 
+            "port": "27017",
+            "source-group": "sg-fedcba9876543210f"
+        }
+    }
+}
