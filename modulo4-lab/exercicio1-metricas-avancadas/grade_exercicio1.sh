@@ -38,13 +38,9 @@ check_and_score "Métricas customizadas no CloudWatch" 20 \
 check_and_score "Dashboard de performance criado" 20 \
 "aws cloudwatch list-dashboards --query 'DashboardEntries[?contains(DashboardName, \`$ID-Performance\`)].DashboardName' --output text | grep -q '$ID'"
 
-# Teste 3: Verificar alarmes de performance (20 pontos)
-check_and_score "Alarmes de performance configurados" 20 \
-"aws cloudwatch describe-alarms --alarm-names $ID-HighQueryExecutionTime --query 'MetricAlarms[0].AlarmName' --output text | grep -q '$ID-HighQueryExecutionTime'"
-
-# Teste 4: Verificar tópico SNS para alertas (15 pontos)
-check_and_score "Tópico SNS para alertas de performance" 15 \
-"aws sns list-topics --query 'Topics[?contains(TopicArn, \`$ID-performance-alerts\`)].TopicArn' --output text | grep -q 'performance-alerts'"
+# Teste 3: Verificar se há dados nas métricas (35 pontos)
+check_and_score "Dados de métricas disponíveis" 35 \
+"aws cloudwatch get-metric-statistics --namespace Custom/DocumentDB --metric-name IndexHitRatio --dimensions Name=ClusterIdentifier,Value=$ID-lab-cluster-console --start-time \$(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) --end-time \$(date -u +%Y-%m-%dT%H:%M:%S) --period 300 --statistics Average --query 'Datapoints[0].Average' --output text | grep -v 'None'"
 
 # Teste 5: Verificar script de coleta de métricas (15 pontos)
 check_and_score "Script de coleta de métricas existe" 15 \
@@ -52,7 +48,7 @@ check_and_score "Script de coleta de métricas existe" 15 \
 
 # Teste 6: Verificar se Node.js dependencies estão instaladas (10 pontos)
 check_and_score "Dependencies Node.js instaladas" 10 \
-"test -f package.json && npm list mongodb aws-sdk"
+"test -f package.json && npm list mongodb @aws-sdk/client-cloudwatch"
 
 echo ""
 echo "=========================================="
@@ -74,8 +70,8 @@ echo ""
 echo "Detalhes da avaliação:"
 echo "- Métricas customizadas: Essencial para monitoramento avançado"
 echo "- Dashboard especializado: Visualização focada em performance"
-echo "- Alertas proativos: Detecção precoce de problemas"
-echo "- Automação: Scripts para coleta contínua"
+echo "- Dados de métricas: Verificação de envio bem-sucedido"
+echo "- Estrutura de código: Scripts e dependências corretas"
 
 if [ $SCORE -lt 80 ]; then
     echo ""

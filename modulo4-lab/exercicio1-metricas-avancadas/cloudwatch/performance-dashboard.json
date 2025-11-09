@@ -13,7 +13,7 @@
         ],
         "view": "timeSeries",
         "stacked": false,
-        "region": "us-east-1",
+        "region": "us-east-2",
         "title": "Query Performance Metrics",
         "period": 300,
         "stat": "Average"
@@ -32,7 +32,7 @@
         ],
         "view": "timeSeries",
         "stacked": false,
-        "region": "us-east-1",
+        "region": "us-east-2",
         "title": "Index Efficiency",
         "period": 300,
         "stat": "Average"
@@ -52,7 +52,7 @@
         ],
         "view": "timeSeries",
         "stacked": true,
-        "region": "us-east-1",
+        "region": "us-east-2",
         "title": "Connection Pool Health",
         "period": 300,
         "stat": "Average"
@@ -73,7 +73,7 @@
         ],
         "view": "timeSeries",
         "stacked": false,
-        "region": "us-east-1",
+        "region": "us-east-2",
         "title": "System Performance",
         "period": 300,
         "stat": "Average"
@@ -90,7 +90,7 @@
           [ "Custom/DocumentDB", "ConnectionPoolUtilization", "ClusterIdentifier", "YOUR_CLUSTER_IDENTIFIER" ]
         ],
         "view": "singleValue",
-        "region": "us-east-1",
+        "region": "us-east-2",
         "title": "Connection Pool Utilization (%)",
         "period": 300,
         "stat": "Average"

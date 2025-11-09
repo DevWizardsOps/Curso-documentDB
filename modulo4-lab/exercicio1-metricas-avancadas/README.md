@@ -44,6 +44,7 @@ export CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
 --output text)
 export DB_USERNAME="docdbadmin"
 export DB_PASSWORD="Lab12345!"
+export AWS_REGION="us-east-2"  # Região padrão do laboratório
 
 # Executar script de exemplo
 node scripts/collect-metrics.js
@@ -86,15 +87,17 @@ Após executar o script, na tela que você está vendo:
 - Selecione as métricas:
   - `QueryExecutionTime`
   - `SlowQueries`
-- Period: 1 minute
-- Statistic: Average
+- Graphed metrics:
+  - Period: 1 minute
+  - Statistic: Average
 
 **Widget 2: Index Efficiency**
 - Tipo: Number
 - Busque por: `Custom/DocumentDB`
 - Selecione: `IndexHitRatio`
-- Period: 5 minutes
-- Statistic: Average
+- Graphed metrics:
+  - Period: 5 minutes
+  - Statistic: Average
 
 **Widget 3: Connection Pool Health**
 - Tipo: Stacked area  
@@ -103,104 +106,38 @@ Após executar o script, na tela que você está vendo:
   - `ActiveConnections`
   - `IdleConnections`
   - `ConnectionWaitTime`
-- Period: 1 minute
+- Graphed metrics:
+  - Period: 1 minute
+  - Statistic: Average
 
 > 💡 **Dica:** Se as métricas não aparecerem, aguarde alguns minutos após executar o script ou execute-o novamente.
 
-### Via CLI
+### Via CLI (Alternativa)
+
+> 💡 **Nota:** Se você já criou o dashboard via console, pode pular esta seção ou criar um segundo dashboard com nome diferente.
 
 ```bash
-# Criar dashboard usando arquivo JSON pré-configurado
+# Gerar JSON do dashboard com suas variáveis
+sed "s/YOUR_CLUSTER_IDENTIFIER/$ID-lab-cluster-console/g" \
+cloudwatch/performance-dashboard.json > /tmp/dashboard-$ID.json
+
+# Criar dashboard alternativo usando CLI
 aws cloudwatch put-dashboard \
---dashboard-name $ID-Performance-Tuning-Dashboard \
---dashboard-body file://cloudwatch/performance-dashboard.json
+--dashboard-name $ID-Performance-Tuning-Dashboard-byAWSCLI \
+--dashboard-body file:///tmp/dashboard-$ID.json
 
 # Verificar criação
 aws cloudwatch list-dashboards \
 --query "DashboardEntries[?contains(DashboardName, '$ID-Performance')].DashboardName"
 ```
 
----
-
-## 🚨 Parte 3: Alertas Proativos de Performance
-
-### Passo 1: Criar Tópico SNS para Alertas de Performance
-
-```bash
-# Criar tópico específico para performance
-aws sns create-topic \
---name $ID-performance-alerts
-
-# Obter ARN do tópico
-PERF_TOPIC_ARN=$(aws sns list-topics \
---query "Topics[?contains(TopicArn, '$ID-performance-alerts')].TopicArn" \
---output text)
-
-echo "Performance Topic ARN: $PERF_TOPIC_ARN"
-
-# Adicionar seu email como subscriber
-aws sns subscribe \
---topic-arn $PERF_TOPIC_ARN \
---protocol email \
---notification-endpoint seu-email@example.com
-```
-
-### Passo 2: Alarmes de Performance Críticos
-
-#### Alarme 1: Query Execution Time Alto
-
-```bash
-aws cloudwatch put-metric-alarm \
---alarm-name "$ID-HighQueryExecutionTime" \
---alarm-description "Tempo de execução de queries acima de 100ms" \
---metric-name QueryExecutionTime \
---namespace Custom/DocumentDB \
---statistic Average \
---period 300 \
---evaluation-periods 2 \
---threshold 100 \
---comparison-operator GreaterThanThreshold \
---dimensions Name=ClusterIdentifier,Value=$ID-lab-cluster-console \
---alarm-actions $PERF_TOPIC_ARN
-```
-
-#### Alarme 2: Index Hit Ratio Baixo
-
-```bash
-aws cloudwatch put-metric-alarm \
---alarm-name "$ID-LowIndexHitRatio" \
---alarm-description "Taxa de hit de índices abaixo de 95%" \
---metric-name IndexHitRatio \
---namespace Custom/DocumentDB \
---statistic Average \
---period 300 \
---evaluation-periods 3 \
---threshold 95 \
---comparison-operator LessThanThreshold \
---dimensions Name=ClusterIdentifier,Value=$ID-lab-cluster-console \
---alarm-actions $PERF_TOPIC_ARN
-```
-
-#### Alarme 3: Connection Pool Saturation
-
-```bash
-aws cloudwatch put-metric-alarm \
---alarm-name "$ID-ConnectionPoolSaturation" \
---alarm-description "Pool de conexões com mais de 80% de utilização" \
---metric-name ConnectionPoolUtilization \
---namespace Custom/DocumentDB \
---statistic Average \
---period 180 \
---evaluation-periods 2 \
---threshold 80 \
---comparison-operator GreaterThanThreshold \
---dimensions Name=ClusterIdentifier,Value=$ID-lab-cluster-console \
---alarm-actions $PERF_TOPIC_ARN
-```
+**Opções disponíveis:**
+- **Via Console:** `$ID-Performance-Tuning-Dashboard` (criado manualmente)
+- **Via CLI:** `$ID-Performance-Tuning-Dashboard-byAWSCLI` (usando JSON)
 
 ---
 
-## 📊 Parte 4: Conceitos de Performance Baseline
+## � Parrte 3: Conceitos de Performance Baseline
 
 ### Entendendo Baselines de Performance
 
@@ -227,7 +164,7 @@ aws cloudwatch put-metric-alarm \
 
 ---
 
-## 🔍 Parte 5: Conceitos de Monitoramento Contínuo
+## 🔍 Parte 4: Conceitos de Monitoramento Contínuo
 
 ### Como Implementar Coleta Contínua (Conceitual)
 
@@ -265,7 +202,7 @@ done
 
 ---
 
-## 📋 Parte 6: Validação e Testes
+## 📋 Parte 5: Validação e Testes
 
 ### Teste 1: Verificar se Métricas Foram Enviadas
 
@@ -275,9 +212,6 @@ aws cloudwatch list-metrics --namespace Custom/DocumentDB
 
 # Se não aparecer nada, verificar todas as métricas customizadas
 aws cloudwatch list-metrics --query "Metrics[?Namespace=='Custom/DocumentDB']"
-
-# Verificar se há erros de permissão
-aws sts get-caller-identity
 ```
 
 **Troubleshooting:**
@@ -294,7 +228,6 @@ Se as métricas não aparecerem no CloudWatch:
    ```bash
    echo "ID: $ID"
    echo "CLUSTER_ENDPOINT: $CLUSTER_ENDPOINT" 
-   echo "AWS_REGION: $AWS_REGION"
    ```
 
 3. **Verificar permissões AWS:**
@@ -307,19 +240,22 @@ Se as métricas não aparecerem no CloudWatch:
    - CloudWatch pode levar 2-5 minutos para mostrar métricas novas
    - Execute o script 2-3 vezes com intervalo de 1 minuto
 
-### Teste 2: Verificar Configuração de Alertas
+### Teste 2: Verificar Dados das Métricas
 
 ```bash
-# Verificar se alarmes foram criados corretamente
-aws cloudwatch describe-alarms \
---alarm-names $ID-HighQueryExecutionTime $ID-LowIndexHitRatio $ID-ConnectionPoolSaturation \
---query "MetricAlarms[].{Name:AlarmName,State:StateValue,Threshold:Threshold}"
+# Verificar dados de uma métrica específica
+aws cloudwatch get-metric-statistics \
+--namespace Custom/DocumentDB \
+--metric-name IndexHitRatio \
+--dimensions Name=ClusterIdentifier,Value=$ID-lab-cluster-console \
+--start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+--end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+--period 300 \
+--statistics Average
 
 # Listar todas as métricas customizadas criadas
 aws cloudwatch list-metrics --namespace Custom/DocumentDB
 ```
-
-> 💡 **Nota:** Os alarmes podem não disparar imediatamente pois as métricas são simuladas. Em um ambiente real, eles responderiam a condições reais de performance.
 
 ### Teste 3: Validar Dashboard
 
@@ -355,16 +291,13 @@ Execute o script de validação:
 ## 🧹 Limpeza
 
 ```bash
-# Deletar alarmes de performance
-aws cloudwatch delete-alarms \
---alarm-names $ID-HighQueryExecutionTime $ID-LowIndexHitRatio $ID-ConnectionPoolSaturation
-
 # Deletar dashboard
 aws cloudwatch delete-dashboards \
 --dashboard-names $ID-Performance-Tuning-Dashboard
 
-# Deletar tópico SNS
-aws sns delete-topic --topic-arn $PERF_TOPIC_ARN
+# Deletar dashboard alternativo (se criado via CLI)
+aws cloudwatch delete-dashboards \
+--dashboard-names $ID-Performance-Tuning-Dashboard-byAWSCLI
 
 # Nota: As métricas customizadas no CloudWatch são automaticamente removidas após 15 meses sem novos dados
 ```
