@@ -9,7 +9,7 @@ const config = {
   clusterId: process.env.ID + '-lab-cluster-console'
 };
 
-const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION || 'us-east-2' });
 
 class MetricsCollector {
   constructor() {
@@ -32,13 +32,13 @@ class MetricsCollector {
     try {
       // Coletar métricas de performance de queries
       const queryMetrics = await this.measureQueryPerformance();
-      
+
       // Coletar métricas de índices
       const indexMetrics = await this.measureIndexEfficiency();
-      
+
       // Coletar métricas de connection pool
       const poolMetrics = await this.measureConnectionPool();
-      
+
       // Enviar para CloudWatch
       await this.sendToCloudWatch({
         ...queryMetrics,
@@ -53,18 +53,11 @@ class MetricsCollector {
   }
 
   async measureQueryPerformance() {
-    const db = this.client.db('performanceDB');
-    const iterations = 10;
-    
-    // Medir queries simples
-    const start = Date.now();
-    for (let i = 0; i < iterations; i++) {
-      await db.collection('products').findOne({category: 'electronics'});
-    }
-    const avgQueryTime = (Date.now() - start) / iterations;
-
-    // Contar queries lentas (simulado)
+    // Simular tempo de query (para fins educacionais)
+    const avgQueryTime = 15 + Math.random() * 20; // 15-35ms
     const slowQueries = Math.floor(Math.random() * 5);
+
+    console.log(`Simulated query performance: ${avgQueryTime.toFixed(2)}ms avg, ${slowQueries} slow queries`);
 
     return {
       QueryExecutionTime: avgQueryTime,
@@ -77,6 +70,8 @@ class MetricsCollector {
     const indexHitRatio = 85 + Math.random() * 10; // 85-95%
     const indexMisses = Math.floor(Math.random() * 20);
 
+    console.log(`Simulated index efficiency: ${indexHitRatio.toFixed(2)}% hit ratio, ${indexMisses} misses`);
+
     return {
       IndexHitRatio: indexHitRatio,
       IndexMisses: indexMisses
@@ -88,12 +83,15 @@ class MetricsCollector {
     const activeConnections = Math.floor(Math.random() * 50) + 10;
     const idleConnections = Math.floor(Math.random() * 20) + 5;
     const connectionWaitTime = Math.random() * 100;
+    const utilization = (activeConnections / (activeConnections + idleConnections)) * 100;
+
+    console.log(`Simulated connection pool: ${activeConnections} active, ${idleConnections} idle, ${utilization.toFixed(2)}% utilization`);
 
     return {
       ActiveConnections: activeConnections,
       IdleConnections: idleConnections,
       ConnectionWaitTime: connectionWaitTime,
-      ConnectionPoolUtilization: (activeConnections / (activeConnections + idleConnections)) * 100
+      ConnectionPoolUtilization: utilization
     };
   }
 
@@ -101,8 +99,8 @@ class MetricsCollector {
     const metricData = Object.entries(metrics).map(([name, value]) => ({
       MetricName: name,
       Value: value,
-      Unit: name.includes('Time') ? 'Milliseconds' : 
-            name.includes('Ratio') || name.includes('Utilization') ? 'Percent' : 'Count',
+      Unit: name.includes('Time') ? 'Milliseconds' :
+        name.includes('Ratio') || name.includes('Utilization') ? 'Percent' : 'Count',
       Dimensions: [
         {
           Name: 'ClusterIdentifier',
@@ -117,10 +115,16 @@ class MetricsCollector {
     });
 
     try {
-      await cloudwatch.send(command);
+      console.log(`Sending metrics to CloudWatch in region: ${process.env.AWS_REGION || 'us-east-2'}`);
+      console.log(`Cluster ID: ${config.clusterId}`);
+      console.log(`Metrics to send:`, metricData.map(m => `${m.MetricName}: ${m.Value}`));
+
+      const result = await cloudwatch.send(command);
       console.log('Metrics sent to CloudWatch successfully');
+      console.log('Response:', result);
     } catch (error) {
       console.error('Error sending metrics to CloudWatch:', error);
+      console.error('Error details:', error.message);
     }
   }
 
@@ -134,7 +138,7 @@ class MetricsCollector {
 // Executar coleta de métricas
 async function main() {
   const collector = new MetricsCollector();
-  
+
   try {
     await collector.connect();
     await collector.collectCustomMetrics();
