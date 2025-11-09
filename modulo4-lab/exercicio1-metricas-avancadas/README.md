@@ -44,7 +44,6 @@ export CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
 --output text)
 export DB_USERNAME="docdbadmin"
 export DB_PASSWORD="Lab12345!"
-export AWS_REGION="us-east-2"  # Região padrão do laboratório
 
 # Executar script de exemplo
 node scripts/collect-metrics.js
