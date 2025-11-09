@@ -31,9 +31,13 @@ Execute o script para começar a coletar métricas customizadas:
 ```bash
 # Configurar variáveis de ambiente
 export ID="<seu-id>"
-export CLUSTER_ENDPOINT="$ID-lab-cluster-console.cluster-xxxxxxxxx.us-east-1.docdb.amazonaws.com"
+export CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].Endpoint' \
+--output text)
 export DB_USERNAME="docdbadmin"
-export DB_PASSWORD="password123"
+export DB_PASSWORD="Lab12345!"
+
 
 # Executar coleta de métricas
 node scripts/collect-metrics.js
