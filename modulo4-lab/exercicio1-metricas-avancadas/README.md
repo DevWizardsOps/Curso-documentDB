@@ -16,12 +16,17 @@
 
 ## 📊 Parte 1: Configurar Métricas Customizadas
 
-### Passo 1: Instalar Dependências
+### Passo 1: Preparar Ambiente
 
 ```bash
+# Navegar para o diretório do exercício
+cd exercicio1-metricas-avancadas
+
+# Baixar certificado SSL do DocumentDB
+wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+
 # Instalar Node.js dependencies para coleta de métricas
-npm init -y
-npm install mongodb aws-sdk
+npm install
 ```
 
 ### Passo 2: Script de Coleta de Métricas Avançadas

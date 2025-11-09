@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 const { MongoClient } = require('mongodb');
-const AWS = require('aws-sdk');
+const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-cloudwatch');
 
 // Configuração
 const config = {
-  connectionString: `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.CLUSTER_ENDPOINT}:27017/performanceDB?ssl=true&retryWrites=false`,
+  connectionString: `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.CLUSTER_ENDPOINT}:27017/performanceDB?ssl=true&retryWrites=false&tlsCAFile=global-bundle.pem&tlsAllowInvalidHostnames=true`,
   clusterId: process.env.ID + '-lab-cluster-console'
 };
 
-const cloudwatch = new AWS.CloudWatch();
+const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 class MetricsCollector {
   constructor() {
@@ -20,7 +20,9 @@ class MetricsCollector {
   async connect() {
     this.client = new MongoClient(config.connectionString, {
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000
+      serverSelectionTimeoutMS: 10000,
+      tls: true,
+      tlsCAFile: 'global-bundle.pem'
     });
     await this.client.connect();
     console.log('Connected to DocumentDB for metrics collection');
@@ -109,13 +111,14 @@ class MetricsCollector {
       ]
     }));
 
-    const params = {
+    const command = new PutMetricDataCommand({
       Namespace: 'Custom/DocumentDB',
       MetricData: metricData
-    };
+    });
 
     try {
-      await cloudwatch.putMetricData(params).promise();
+      await cloudwatch.send(command);
+      console.log('Metrics sent to CloudWatch successfully');
     } catch (error) {
       console.error('Error sending metrics to CloudWatch:', error);
     }

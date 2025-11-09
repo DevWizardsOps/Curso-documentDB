@@ -1,0 +1,22 @@
+{
+  "name": "exercicio1-metricas-avancadas",
+  "version": "1.0.0",
+  "description": "Exercício 1 - Métricas Avançadas e Monitoramento de Performance",
+  "main": "scripts/collect-metrics.js",
+  "scripts": {
+    "collect-metrics": "node scripts/collect-metrics.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "mongodb": "^6.0.0",
+    "@aws-sdk/client-cloudwatch": "^3.450.0"
+  },
+  "keywords": [
+    "documentdb",
+    "performance",
+    "metrics",
+    "cloudwatch"
+  ],
+  "author": "Curso DocumentDB",
+  "license": "MIT"
+}
