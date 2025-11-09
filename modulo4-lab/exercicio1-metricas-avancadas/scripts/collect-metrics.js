@@ -5,7 +5,7 @@ const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-clou
 
 // Configuração
 const config = {
-  connectionString: `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.CLUSTER_ENDPOINT}:27017/performanceDB?ssl=true&retryWrites=false&tlsCAFile=global-bundle.pem&tlsAllowInvalidHostnames=true`,
+  connectionString: `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.CLUSTER_ENDPOINT}:27017/performanceDB?ssl=true&retryWrites=false&tlsCAFile=global-bundle.pem&tlsAllowInvalidHostnames=true&authMechanism=SCRAM-SHA-1`,
   clusterId: process.env.ID + '-lab-cluster-console'
 };
 
