@@ -1,0 +1,24 @@
+# Arquivos sensíveis gerados durante o curso
+*.pem
+*.key
+*.log
+
+# Arquivos temporários
+*.tmp
+*.bak
+*~
+
+# Arquivos de configuração local
+.env
+.aws/
+terraform.tfstate*
+terraform.tfvars
+
+# Outputs de comandos
+outputs/
+logs/
+
+# Arquivos específicos do instrutor
+instructor-notes.md
+student-list.txt
+access-keys.txt

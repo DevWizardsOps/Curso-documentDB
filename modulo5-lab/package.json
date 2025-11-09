@@ -1,0 +1,50 @@
+{
+  "name": "modulo5-replicacao-backup-ha",
+  "version": "1.0.0",
+  "description": "Laboratório de Replicação, Backup e Alta Disponibilidade do DocumentDB - Módulo 5",
+  "main": "index.js",
+  "scripts": {
+    "test-replication-lag": "node exercicio1-replicacao-avancada/scripts/test-replication-lag.js",
+    "calculate-rto": "node exercicio2-rto-rpo-optimization/scripts/rto-calculator.js",
+    "export-to-s3": "node exercicio3-export-s3/scripts/export-to-s3.js",
+    "cross-region-sync": "node exercicio4-cross-region-strategies/scripts/cross-region-sync.js",
+    "grade-all": "find . -name 'grade_*.sh' -exec {} \\;",
+    "setup": "npm install && echo 'Setup completo! Execute os exercícios individuais.'",
+    "clean": "find . -name 'node_modules' -type d -exec rm -rf {} + 2>/dev/null || true"
+  },
+  "dependencies": {
+    "mongodb": "^6.0.0",
+    "aws-sdk": "^2.1400.0",
+    "pymongo": "^3.12.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "keywords": [
+    "documentdb",
+    "replication",
+    "backup",
+    "high-availability",
+    "disaster-recovery",
+    "cross-region",
+    "rto",
+    "rpo",
+    "s3-export",
+    "mongodb",
+    "aws"
+  ],
+  "author": "Curso DocumentDB",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0",
+    "python": ">=3.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/exemplo/curso-documentdb"
+  },
+  "bugs": {
+    "url": "https://github.com/exemplo/curso-documentdb/issues"
+  },
+  "homepage": "https://github.com/exemplo/curso-documentdb#readme"
+}

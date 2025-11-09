@@ -1,0 +1,454 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Ambiente para Curso DocumentDB - Instâncias EC2 + Usuários IAM'
+
+Parameters:
+  NumeroAlunos:
+    Type: Number
+    Default: 2
+    MinValue: 1
+    MaxValue: 10
+    Description: 'Número de alunos (1-10)'
+    
+  PrefixoAluno:
+    Type: String
+    Default: 'aluno'
+    Description: 'Prefixo para nomes dos alunos'
+    
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: 'VPC onde criar as instâncias'
+    
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: 'Subnet pública para as instâncias'
+    
+  AllowedCIDR:
+    Type: String
+    Default: '0.0.0.0/0'
+    Description: 'CIDR permitido para SSH'
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      AMI: ami-0c02fb55956c7d316
+    us-east-2:
+      AMI: ami-0f924dc71d44d23e2
+    us-west-1:
+      AMI: ami-0d9858aa3c6322f73
+    us-west-2:
+      AMI: ami-008fe2fc65df48dac
+    eu-west-1:
+      AMI: ami-01dd271720c1ba44f
+    eu-central-1:
+      AMI: ami-0f454ec961da9a046
+
+Conditions:
+  CreateAluno01: !Not [!Equals [!Ref NumeroAlunos, 0]]
+  CreateAluno02: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1]]]
+  CreateAluno03: !And [!Not [!Equals [!Ref NumeroAlunos, 0]], !Not [!Equals [!Ref NumeroAlunos, 1]], !Not [!Equals [!Ref NumeroAlunos, 2]]]
+  CreateAluno04: !And [!Condition CreateAluno03, !Not [!Equals [!Ref NumeroAlunos, 3]]]
+  CreateAluno05: !And [!Condition CreateAluno04, !Not [!Equals [!Ref NumeroAlunos, 4]]]
+
+Resources:
+  # Security Group para alunos
+  AlunosSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-alunos-sg'
+      GroupDescription: 'Security Group para instâncias dos alunos'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AllowedCIDR
+          Description: 'SSH access'
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-alunos-sg'
+
+  # Security Group para DocumentDB
+  DocumentDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-documentdb-sg'
+      GroupDescription: 'Security Group para DocumentDB'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 27017
+          ToPort: 27017
+          SourceSecurityGroupId: !Ref AlunosSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-documentdb-sg'
+
+  # IAM Group para alunos
+  CursoDocumentDBGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-students'
+      Policies:
+        - PolicyName: DocumentDBCoursePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # DocumentDB - Acesso completo
+              - Effect: Allow
+                Action:
+                  - 'docdb:*'
+                Resource: '*'
+              
+              # EC2 - Apenas consultas e gerenciamento de Security Groups
+              - Effect: Allow
+                Action:
+                  - 'ec2:DescribeVpcs'
+                  - 'ec2:DescribeSubnets'
+                  - 'ec2:DescribeSecurityGroups'
+                  - 'ec2:DescribeAvailabilityZones'
+                  - 'ec2:CreateSecurityGroup'
+                  - 'ec2:AuthorizeSecurityGroupIngress'
+                  - 'ec2:AuthorizeSecurityGroupEgress'
+                  - 'ec2:RevokeSecurityGroupIngress'
+                  - 'ec2:RevokeSecurityGroupEgress'
+                  - 'ec2:DeleteSecurityGroup'
+                  - 'ec2:CreateTags'
+                Resource: '*'
+                Condition:
+                  StringLike:
+                    'ec2:ResourceTag/Purpose': 'Curso DocumentDB*'
+              
+              # CloudWatch - Monitoramento e métricas
+              - Effect: Allow
+                Action:
+                  - 'cloudwatch:GetMetricStatistics'
+                  - 'cloudwatch:ListMetrics'
+                  - 'cloudwatch:GetMetricData'
+                  - 'cloudwatch:DescribeAlarms'
+                  - 'cloudwatch:PutMetricAlarm'
+                  - 'cloudwatch:DeleteAlarms'
+                  - 'cloudwatch:PutDashboard'
+                  - 'cloudwatch:GetDashboard'
+                  - 'cloudwatch:ListDashboards'
+                  - 'cloudwatch:DeleteDashboards'
+                Resource: '*'
+              
+              # CloudWatch Logs - Visualização de logs
+              - Effect: Allow
+                Action:
+                  - 'logs:DescribeLogGroups'
+                  - 'logs:DescribeLogStreams'
+                  - 'logs:GetLogEvents'
+                  - 'logs:FilterLogEvents'
+                Resource: '*'
+              
+              # S3 - Buckets do curso apenas
+              - Effect: Allow
+                Action:
+                  - 's3:ListBucket'
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:DeleteObject'
+                  - 's3:GetBucketLocation'
+                Resource: 
+                  - !Sub 'arn:aws:s3:::${AWS::StackName}-*'
+                  - !Sub 'arn:aws:s3:::${AWS::StackName}-*/*'
+              
+              # EventBridge - Para automação básica
+              - Effect: Allow
+                Action:
+                  - 'events:PutRule'
+                  - 'events:DeleteRule'
+                  - 'events:PutTargets'
+                  - 'events:RemoveTargets'
+                  - 'events:DescribeRule'
+                  - 'events:ListRules'
+                  - 'events:ListTargetsByRule'
+                Resource: '*'
+                Condition:
+                  StringLike:
+                    'events:RuleName': !Sub '${AWS::StackName}-*'
+              
+              # Lambda - Funções básicas para automação
+              - Effect: Allow
+                Action:
+                  - 'lambda:CreateFunction'
+                  - 'lambda:DeleteFunction'
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:UpdateFunctionCode'
+                  - 'lambda:UpdateFunctionConfiguration'
+                  - 'lambda:GetFunction'
+                  - 'lambda:ListFunctions'
+                Resource: !Sub 'arn:aws:lambda:*:${AWS::AccountId}:function:${AWS::StackName}-*'
+              
+              # KMS - Apenas visualização de chaves
+              - Effect: Allow
+                Action:
+                  - 'kms:Describe*'
+                  - 'kms:List*'
+                Resource: '*'
+              
+              # STS - Identificação do usuário
+              - Effect: Allow
+                Action:
+                  - 'sts:GetCallerIdentity'
+                Resource: '*'
+
+  # IAM Role para instâncias EC2
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2Role
+
+  # S3 Bucket para laboratórios
+  LabsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-labs-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # Recursos do Aluno 01
+  Aluno01KeyPair:
+    Condition: CreateAluno01
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Sub '${AWS::StackName}-${PrefixoAluno}01-key'
+      KeyType: rsa
+
+  Aluno01User:
+    Condition: CreateAluno01
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}01'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+
+  Aluno01AccessKey:
+    Condition: CreateAluno01
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno01User
+
+  Aluno01Instance:
+    Condition: CreateAluno01
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref Aluno01KeyPair
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            yum update -y
+            yum install -y aws-cli git
+            
+            # Instalar MongoDB Shell
+            cat > /etc/yum.repos.d/mongodb-org-7.0.repo << 'EOF'
+            [mongodb-org-7.0]
+            name=MongoDB Repository
+            baseurl=https://repo.mongodb.org/yum/amazon/2/mongodb-org/7.0/x86_64/
+            gpgcheck=1
+            enabled=1
+            gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
+            EOF
+            yum install -y mongodb-mongosh
+            
+            # Criar usuário do aluno
+            useradd -m -s /bin/bash ${PrefixoAluno}01
+            echo "${PrefixoAluno}01 ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+            
+            # Instalar Node.js
+            curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+            yum install -y nodejs
+            
+            # Instalar Python 3 e pip
+            yum install -y python3 python3-pip
+            
+            # Instalar Terraform
+            yum install -y yum-utils
+            yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+            yum install -y terraform
+            
+            # Configurar AWS CLI para o aluno
+            sudo -u ${PrefixoAluno}01 aws configure set aws_access_key_id ${AccessKey}
+            sudo -u ${PrefixoAluno}01 aws configure set aws_secret_access_key ${SecretKey}
+            sudo -u ${PrefixoAluno}01 aws configure set default.region ${AWS::Region}
+            sudo -u ${PrefixoAluno}01 aws configure set default.output json
+            
+            # Baixar certificado SSL do DocumentDB
+            cd /home/${PrefixoAluno}01
+            wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+            chown ${PrefixoAluno}01:${PrefixoAluno}01 global-bundle.pem
+            
+            # Instalar dependências Python
+            sudo -u ${PrefixoAluno}01 pip3 install --user boto3
+            
+            # Criar projeto Node.js
+            sudo -u ${PrefixoAluno}01 mkdir -p /home/${PrefixoAluno}01/nodejs-project
+            cd /home/${PrefixoAluno}01/nodejs-project
+            sudo -u ${PrefixoAluno}01 npm init -y
+            sudo -u ${PrefixoAluno}01 npm install @aws-sdk/client-docdb @aws-sdk/client-cloudwatch
+            
+            # Criar diretório para laboratórios
+            sudo -u ${PrefixoAluno}01 mkdir -p /home/${PrefixoAluno}01/documentdb-labs
+            
+            # Ajustar permissões
+            chown -R ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/
+            
+            # Marcar setup como completo
+            echo "Setup completo em $(date)" > /home/${PrefixoAluno}01/setup-complete.txt
+            chown ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/setup-complete.txt
+          - AccessKey: !Ref Aluno01AccessKey
+            SecretKey: !GetAtt Aluno01AccessKey.SecretAccessKey
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}01-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 02
+  Aluno02KeyPair:
+    Condition: CreateAluno02
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Sub '${AWS::StackName}-${PrefixoAluno}02-key'
+      KeyType: rsa
+
+  Aluno02User:
+    Condition: CreateAluno02
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}02'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+
+  Aluno02AccessKey:
+    Condition: CreateAluno02
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno02User
+
+  Aluno02Instance:
+    Condition: CreateAluno02
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref Aluno02KeyPair
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            yum update -y
+            yum install -y aws-cli git
+            
+            # Instalar MongoDB Shell
+            cat > /etc/yum.repos.d/mongodb-org-7.0.repo << 'EOF'
+            [mongodb-org-7.0]
+            name=MongoDB Repository
+            baseurl=https://repo.mongodb.org/yum/amazon/2/mongodb-org/7.0/x86_64/
+            gpgcheck=1
+            enabled=1
+            gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
+            EOF
+            yum install -y mongodb-mongosh
+            
+            # Criar usuário do aluno
+            useradd -m -s /bin/bash ${PrefixoAluno}02
+            echo "${PrefixoAluno}02 ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+            
+            # Instalar Node.js
+            curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+            yum install -y nodejs python3 python3-pip yum-utils
+            yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+            yum install -y terraform
+            
+            # Configurar AWS CLI
+            sudo -u ${PrefixoAluno}02 aws configure set aws_access_key_id ${AccessKey}
+            sudo -u ${PrefixoAluno}02 aws configure set aws_secret_access_key ${SecretKey}
+            sudo -u ${PrefixoAluno}02 aws configure set default.region ${AWS::Region}
+            sudo -u ${PrefixoAluno}02 aws configure set default.output json
+            
+            # Setup do ambiente
+            cd /home/${PrefixoAluno}02
+            wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+            chown ${PrefixoAluno}02:${PrefixoAluno}02 global-bundle.pem
+            sudo -u ${PrefixoAluno}02 pip3 install --user boto3
+            sudo -u ${PrefixoAluno}02 mkdir -p /home/${PrefixoAluno}02/nodejs-project /home/${PrefixoAluno}02/documentdb-labs
+            cd /home/${PrefixoAluno}02/nodejs-project
+            sudo -u ${PrefixoAluno}02 npm init -y
+            sudo -u ${PrefixoAluno}02 npm install @aws-sdk/client-docdb @aws-sdk/client-cloudwatch
+            chown -R ${PrefixoAluno}02:${PrefixoAluno}02 /home/${PrefixoAluno}02/
+            echo "Setup completo em $(date)" > /home/${PrefixoAluno}02/setup-complete.txt
+            chown ${PrefixoAluno}02:${PrefixoAluno}02 /home/${PrefixoAluno}02/setup-complete.txt
+          - AccessKey: !Ref Aluno02AccessKey
+            SecretKey: !GetAtt Aluno02AccessKey.SecretAccessKey
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}02-instance'
+
+Outputs:
+  SecurityGroupDocumentDB:
+    Description: 'Security Group ID para DocumentDB'
+    Value: !Ref DocumentDBSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-DocumentDB-SG'
+
+  LabsBucketName:
+    Description: 'Nome do bucket S3'
+    Value: !Ref LabsBucket
+
+  Aluno01Info:
+    Condition: CreateAluno01
+    Description: 'IP e credenciais do Aluno 01'
+    Value: !Sub |
+      IP: ${Aluno01Instance.PublicIp}
+      User: ${Aluno01User}
+      Key: ${Aluno01KeyPair}
+
+  Aluno02Info:
+    Condition: CreateAluno02
+    Description: 'IP e credenciais do Aluno 02'
+    Value: !Sub |
+      IP: ${Aluno02Instance.PublicIp}
+      User: ${Aluno02User}
+      Key: ${Aluno02KeyPair}
+
+  InstrucoesConexao:
+    Description: 'Como conectar às instâncias'
+    Value: !Sub |
+      1. Baixe as chaves SSH do console EC2
+      2. chmod 400 chave.pem
+      3. ssh -i chave.pem ec2-user@IP-PUBLICO
+      4. sudo su - ${PrefixoAluno}XX
+      AWS CLI já configurado!

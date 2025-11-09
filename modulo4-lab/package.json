@@ -1,0 +1,45 @@
+{
+  "name": "modulo4-performance-tuning",
+  "version": "1.0.0",
+  "description": "Laboratório de Performance e Tuning do DocumentDB - Módulo 4",
+  "main": "index.js",
+  "scripts": {
+    "collect-metrics": "node exercicio1-metricas-avancadas/scripts/collect-metrics.js",
+    "analyze-explain": "node exercicio2-planos-execucao/scripts/explain-analyzer.js",
+    "simulate-workload": "node exercicio3-workload-optimization/scripts/workload-simulator.js",
+    "test-connections": "node exercicio4-conexoes-latencia/scripts/latency-test.js",
+    "monitor-performance": "node exercicio1-metricas-avancadas/scripts/collect-metrics.js",
+    "grade-all": "find . -name 'grade_*.sh' -exec {} \\;",
+    "setup": "npm install && echo 'Setup completo! Execute os exercícios individuais.'",
+    "clean": "find . -name 'node_modules' -type d -exec rm -rf {} + 2>/dev/null || true"
+  },
+  "dependencies": {
+    "mongodb": "^6.0.0",
+    "aws-sdk": "^2.1400.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "keywords": [
+    "documentdb",
+    "performance",
+    "tuning",
+    "mongodb",
+    "aws",
+    "optimization",
+    "database"
+  ],
+  "author": "Curso DocumentDB",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/exemplo/curso-documentdb"
+  },
+  "bugs": {
+    "url": "https://github.com/exemplo/curso-documentdb/issues"
+  },
+  "homepage": "https://github.com/exemplo/curso-documentdb#readme"
+}

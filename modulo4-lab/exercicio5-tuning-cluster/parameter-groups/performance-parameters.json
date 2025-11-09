@@ -1,0 +1,123 @@
+{
+  "performance_optimized": {
+    "description": "Configuração otimizada para máxima performance",
+    "parameters": [
+      {
+        "ParameterName": "audit_logs",
+        "ParameterValue": "disabled",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Desabilita logs de auditoria para reduzir overhead"
+      },
+      {
+        "ParameterName": "profiler",
+        "ParameterValue": "disabled", 
+        "ApplyMethod": "pending-reboot",
+        "Description": "Desabilita profiler para máxima performance"
+      },
+      {
+        "ParameterName": "profiler_threshold_ms",
+        "ParameterValue": "100",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Threshold alto para capturar apenas queries muito lentas"
+      }
+    ],
+    "use_cases": ["OLTP", "High-frequency writes", "Real-time applications"],
+    "expected_improvement": "15-25% reduction in latency"
+  },
+
+  "analytics_optimized": {
+    "description": "Configuração otimizada para workloads analíticos",
+    "parameters": [
+      {
+        "ParameterName": "audit_logs",
+        "ParameterValue": "enabled",
+        "ApplyMethod": "pending-reboot", 
+        "Description": "Habilita auditoria para compliance e rastreabilidade"
+      },
+      {
+        "ParameterName": "profiler",
+        "ParameterValue": "enabled",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Habilita profiler para análise detalhada de queries"
+      },
+      {
+        "ParameterName": "profiler_threshold_ms",
+        "ParameterValue": "1000",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Threshold baixo para capturar queries analíticas"
+      },
+      {
+        "ParameterName": "profiler_sampling_rate",
+        "ParameterValue": "0.1",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Sample rate baixo para reduzir overhead em queries longas"
+      }
+    ],
+    "use_cases": ["OLAP", "Data warehousing", "Business intelligence"],
+    "expected_improvement": "Better query analysis and optimization insights"
+  },
+
+  "balanced": {
+    "description": "Configuração balanceada para workloads mistos",
+    "parameters": [
+      {
+        "ParameterName": "audit_logs",
+        "ParameterValue": "enabled",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Auditoria habilitada para compliance"
+      },
+      {
+        "ParameterName": "profiler",
+        "ParameterValue": "enabled",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Profiler habilitado para monitoramento"
+      },
+      {
+        "ParameterName": "profiler_threshold_ms",
+        "ParameterValue": "500",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Threshold médio para balance entre overhead e insights"
+      },
+      {
+        "ParameterName": "profiler_sampling_rate",
+        "ParameterValue": "0.5",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Sample rate médio"
+      }
+    ],
+    "use_cases": ["Mixed workloads", "Development environments", "General purpose"],
+    "expected_improvement": "5-15% improvement with good observability"
+  },
+
+  "development": {
+    "description": "Configuração para ambientes de desenvolvimento",
+    "parameters": [
+      {
+        "ParameterName": "audit_logs",
+        "ParameterValue": "enabled",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Auditoria para debugging"
+      },
+      {
+        "ParameterName": "profiler",
+        "ParameterValue": "enabled",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Profiler para análise de desenvolvimento"
+      },
+      {
+        "ParameterName": "profiler_threshold_ms",
+        "ParameterValue": "50",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Threshold baixo para capturar todas as queries"
+      },
+      {
+        "ParameterName": "profiler_sampling_rate",
+        "ParameterValue": "1.0",
+        "ApplyMethod": "pending-reboot",
+        "Description": "Sample rate máximo para análise completa"
+      }
+    ],
+    "use_cases": ["Development", "Testing", "Debugging"],
+    "expected_improvement": "Maximum observability for development"
+  }
+}
