@@ -141,7 +141,11 @@ db.products.find({
 
 ## 🎯 Parte 3: Estratégias de Indexação Avançadas
 
-> 📚 **Limitações do DocumentDB:** O DocumentDB não suporta alguns recursos do MongoDB como índices de texto ($text), índices geoespaciais 2dsphere, e algumas operações de agregação avançadas.
+> 📚 **Limitações do DocumentDB:** O DocumentDB não suporta alguns recursos do MongoDB como:
+> - Índices de texto (`$text`)
+> - `explain("allPlansExecution")` - use `explain("executionStats")`
+> - Índices geoespaciais 2dsphere
+> - Algumas operações de agregação avançadas
 
 ### Índices Compostos
 
@@ -202,20 +206,31 @@ db.products.find({
 
 ## 🔧 Parte 4: Análise Avançada com explain()
 
-### Usando explain("allPlansExecution")
+### Análise Detalhada com explain()
+
+> ⚠️ **Limitação:** DocumentDB não suporta `explain("allPlansExecution")`. Usamos `explain("executionStats")`.
 
 ```javascript
-// Análise completa de todos os planos considerados
+// Análise detalhada do plano de execução
 db.products.find({
   category: "electronics",
   price: {$gte: 100, $lte: 500}
-}).explain("allPlansExecution")
+}).explain("executionStats")
 ```
 
-**Campos Importantes:**
+**Campos Importantes no DocumentDB:**
 - `queryPlanner.winningPlan`: Plano escolhido pelo otimizador
-- `queryPlanner.rejectedPlans`: Planos alternativos considerados
-- `executionStats.allPlansExecution`: Estatísticas de todos os planos testados
+- `executionStats.stage`: Tipo de operação (IXSCAN, COLLSCAN, etc.)
+- `executionStats.docsExamined`: Documentos examinados
+- `executionStats.docsReturned`: Documentos retornados
+- `executionStats.executionTimeMillis`: Tempo de execução
+
+**Interpretação dos Stages:**
+- `COLLSCAN`: Scan completo da coleção (ruim para performance)
+- `IXSCAN`: Uso de índice (bom para performance)
+- `FETCH`: Busca de documentos após usar índice
+- `SORT`: Operação de ordenação
+- `LIMIT`: Limitação de resultados
 
 ### Análise de Queries de Agregação
 
