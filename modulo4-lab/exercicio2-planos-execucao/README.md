@@ -16,7 +16,22 @@
 
 ## 🔍 Parte 1: Preparação do Ambiente e Dados de Teste
 
-### Passo 1: Conectar ao Cluster e Preparar Dados
+### Passo 1: Preparar Ambiente
+
+```bash
+# Navegar para o diretório do exercício
+cd exercicio2-planos-execucao
+
+# Baixar certificado SSL se não existir
+if [ ! -f "global-bundle.pem" ]; then
+  wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+fi
+
+# Instalar dependências Node.js
+npm install
+```
+
+### Passo 2: Conectar ao Cluster e Preparar Dados
 
 ```bash
 # Navegar para o diretório do exercício
@@ -260,12 +275,14 @@ db.orders.aggregate([
 ### Script de Análise Automatizada
 
 ```bash
-# Executar script de análise de queries
-node scripts/explain-analyzer.js --collection products --analyze-all
+# Executar análise de queries comuns
+node scripts/explain-analyzer.js --analyze-all
 
-# Gerar relatório de otimização
-node scripts/index-optimizer.sh --database performanceDB --recommendations
+# Ou analisar uma coleção específica
+node scripts/explain-analyzer.js --collection products
 ```
+
+> 💡 **O que o script faz:** Analisa automaticamente queries comuns e identifica problemas de performance, sugerindo otimizações de índices.
 
 ### Cenários de Otimização Comuns
 

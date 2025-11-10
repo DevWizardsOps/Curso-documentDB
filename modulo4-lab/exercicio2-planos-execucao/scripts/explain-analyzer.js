@@ -11,7 +11,9 @@ class ExplainAnalyzer {
   async connect() {
     this.client = new MongoClient(this.connectionString, {
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000
+      serverSelectionTimeoutMS: 10000,
+      tls: true,
+      tlsCAFile: 'global-bundle.pem'
     });
     await this.client.connect();
     console.log('Connected to DocumentDB for explain analysis');
@@ -24,11 +26,10 @@ class ExplainAnalyzer {
     console.log(`\nAnalyzing query on ${collection}:`);
     console.log('Query:', JSON.stringify(query, null, 2));
 
-    // Executar explain com diferentes níveis
+    // Executar explain com níveis suportados pelo DocumentDB
     const explainResults = {
       queryPlanner: await coll.find(query).explain('queryPlanner'),
-      executionStats: await coll.find(query).explain('executionStats'),
-      allPlansExecution: await coll.find(query).explain('allPlansExecution')
+      executionStats: await coll.find(query).explain('executionStats')
     };
 
     return this.analyzeExplainResults(explainResults);
@@ -180,7 +181,7 @@ class ExplainAnalyzer {
 // CLI interface
 async function main() {
   const args = process.argv.slice(2);
-  const connectionString = `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.CLUSTER_ENDPOINT}:27017/performanceDB?ssl=true&retryWrites=false`;
+  const connectionString = `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.CLUSTER_ENDPOINT}:27017/performanceDB?ssl=true&retryWrites=false&authMechanism=SCRAM-SHA-1`;
   
   const analyzer = new ExplainAnalyzer(connectionString);
   

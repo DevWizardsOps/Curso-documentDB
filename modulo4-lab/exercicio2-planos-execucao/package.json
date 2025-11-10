@@ -1,0 +1,21 @@
+{
+  "name": "exercicio2-planos-execucao",
+  "version": "1.0.0",
+  "description": "Exercício 2 - Análise de Planos de Execução e Otimização de Índices",
+  "main": "scripts/explain-analyzer.js",
+  "scripts": {
+    "analyze": "node scripts/explain-analyzer.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "mongodb": "^6.0.0"
+  },
+  "keywords": [
+    "documentdb",
+    "performance",
+    "explain",
+    "indexes"
+  ],
+  "author": "Curso DocumentDB",
+  "license": "MIT"
+}
