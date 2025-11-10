@@ -30,23 +30,23 @@ check_and_score() {
     fi
 }
 
-# Teste 1: Verificar se métricas customizadas estão sendo enviadas (20 pontos)
-check_and_score "Métricas customizadas no CloudWatch" 20 \
+# Teste 1: Verificar se métricas customizadas estão sendo enviadas (30 pontos)
+check_and_score "Métricas customizadas no CloudWatch" 30 \
 "aws cloudwatch list-metrics --namespace Custom/DocumentDB --query 'Metrics[?contains(MetricName, \`Query\`) || contains(MetricName, \`Index\`)].MetricName' --output text | grep -q 'QueryExecutionTime'"
 
-# Teste 2: Verificar dashboard de performance (20 pontos)
-check_and_score "Dashboard de performance criado" 20 \
+# Teste 2: Verificar dashboard de performance (25 pontos)
+check_and_score "Dashboard de performance criado" 25 \
 "aws cloudwatch list-dashboards --query 'DashboardEntries[?contains(DashboardName, \`$ID-Performance\`)].DashboardName' --output text | grep -q '$ID'"
 
-# Teste 3: Verificar se há dados nas métricas (35 pontos)
-check_and_score "Dados de métricas disponíveis" 35 \
+# Teste 3: Verificar se há dados nas métricas (25 pontos)
+check_and_score "Dados de métricas disponíveis" 25 \
 "aws cloudwatch get-metric-statistics --namespace Custom/DocumentDB --metric-name IndexHitRatio --dimensions Name=ClusterIdentifier,Value=$ID-lab-cluster-console --start-time \$(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) --end-time \$(date -u +%Y-%m-%dT%H:%M:%S) --period 300 --statistics Average --query 'Datapoints[0].Average' --output text | grep -v 'None'"
 
-# Teste 5: Verificar script de coleta de métricas (15 pontos)
-check_and_score "Script de coleta de métricas existe" 15 \
+# Teste 4: Verificar script de coleta de métricas (10 pontos)
+check_and_score "Script de coleta de métricas existe" 10 \
 "test -f scripts/collect-metrics.js"
 
-# Teste 6: Verificar se Node.js dependencies estão instaladas (10 pontos)
+# Teste 5: Verificar se Node.js dependencies estão instaladas (10 pontos)
 check_and_score "Dependencies Node.js instaladas" 10 \
 "test -f package.json && npm list mongodb @aws-sdk/client-cloudwatch"
 
@@ -57,13 +57,11 @@ echo "=========================================="
 echo "Pontuação: $SCORE/$MAX_SCORE"
 
 if [ $SCORE -ge 80 ]; then
-    echo "Status: ✅ APROVADO (Excelente!)"
+    echo "Status: ✅ CONCLUÍDO ($SCORE/$MAX_SCORE)"
 elif [ $SCORE -ge 60 ]; then
-    echo "Status: ⚠️  APROVADO (Bom trabalho)"
-elif [ $SCORE -ge 40 ]; then
-    echo "Status: ⚠️  PARCIAL (Precisa melhorar)"
+    echo "Status: ⚠️  PARCIALMENTE concluído ($SCORE/$MAX_SCORE)"
 else
-    echo "Status: ❌ REPROVADO (Revisar exercício)"
+    echo "Status: ❌ INCOMPLETO ($SCORE/$MAX_SCORE)"
 fi
 
 echo ""
@@ -78,8 +76,8 @@ if [ $SCORE -lt 80 ]; then
     echo "Dicas para melhorar:"
     echo "1. Verifique se as métricas estão sendo enviadas corretamente"
     echo "2. Confirme que o dashboard foi criado com todos os widgets"
-    echo "3. Teste os alarmes com dados simulados"
-    echo "4. Execute o script de coleta pelo menos uma vez"
+    echo "3. Execute o script de coleta algumas vezes para gerar dados"
+    echo "4. Aguarde alguns minutos para propagação das métricas"
 fi
 
 exit 0
