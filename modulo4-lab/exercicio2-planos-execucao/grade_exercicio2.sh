@@ -42,9 +42,9 @@ check_and_score() {
 check_and_score "Base de dados de teste criada" 30 \
 "mongosh --host $CLUSTER_ENDPOINT:27017 --username \${DB_USERNAME:-docdbadmin} --password \${DB_PASSWORD:-Lab12345!} --ssl --sslCAFile global-bundle.pem --quiet --eval 'use performanceDB; print(db.products.countDocuments())' 2>/dev/null | grep -E '^[1-9][0-9]*$'"
 
-# Teste 2: Verificar se há índices além do _id (25 pontos)
-check_and_score "Índices customizados criados" 25 \
-"mongosh --host $CLUSTER_ENDPOINT:27017 --username \${DB_USERNAME:-docdbadmin} --password \${DB_PASSWORD:-Lab12345!} --ssl --sslCAFile global-bundle.pem --quiet --eval 'use performanceDB; print(db.products.getIndexes().length)' 2>/dev/null | grep -E '^[2-9]|^[1-9][0-9]+$'"
+# Teste 2: Verificar se índices do exercício foram criados (25 pontos)
+check_and_score "Índices do exercício criados" 25 \
+"mongosh --host $CLUSTER_ENDPOINT:27017 --username \${DB_USERNAME:-docdbadmin} --password \${DB_PASSWORD:-Lab12345!} --ssl --sslCAFile global-bundle.pem --quiet --eval 'use performanceDB; const indexes = db.products.getIndexes(); const hasPrice = indexes.some(idx => idx.key.price); const hasCategory = indexes.some(idx => idx.key.category); print(hasPrice && hasCategory ? \"true\" : \"false\")' 2>/dev/null | grep -q 'true'"
 
 # Teste 3: Verificar script de análise de explain (25 pontos)
 check_and_score "Script explain-analyzer.js existe" 25 \
@@ -71,7 +71,7 @@ fi
 echo ""
 echo "Detalhes da avaliação:"
 echo "- Dados de teste: Base para análise de performance"
-echo "- Índices customizados: Otimização de queries"
+echo "- Índices do exercício: price e category conforme README"
 echo "- Script de análise: Ferramenta para explain()"
 echo "- Configuração: Package.json com dependências"
 
@@ -79,7 +79,7 @@ if [ $SCORE -lt 80 ]; then
     echo ""
     echo "Dicas para melhorar:"
     echo "1. Certifique-se de criar os dados de teste seguindo o README"
-    echo "2. Crie índices seguindo os exemplos do exercício"
+    echo "2. Crie pelo menos os índices de price e category do README"
     echo "3. Verifique se o script explain-analyzer.js existe"
     echo "4. Execute npm install para configurar dependências"
 fi
