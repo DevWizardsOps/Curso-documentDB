@@ -288,7 +288,32 @@ node scripts/explain-analyzer.js --collection products
 
 #### Cenário 1: Query com Sort Custoso
 
+```bash
+# Configurar variáveis de ambiente
+export ID="<seu-id>"
+export CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].Endpoint' \
+--output text)
+export DB_USERNAME="docdbadmin"
+export DB_PASSWORD="Lab12345!"
+
+# Conectar ao DocumentDB
+mongosh --host $CLUSTER_ENDPOINT:27017 \
+--username $DB_USERNAME \
+--password $DB_PASSWORD \
+--ssl \
+--sslCAFile global-bundle.pem \
+--retryWrites=false
+
+```
+
+
 ```javascript
+// Dentro do mongosh, executar:
+
+// Usar database de performance
+use performanceDB
 // Query com sort que não usa índice
 db.products.find({category: "electronics"})
   .sort({createdAt: -1})
@@ -342,11 +367,15 @@ db.products.aggregate([{$indexStats: {}}])
 db.runCommand({collStats: "products", indexDetails: true})
 ```
 
-### Script de Monitoramento Contínuo
+### Monitoramento Manual de Performance
 
 ```bash
-# Executar monitoramento de performance de queries
-node scripts/query-performance-monitor.js --interval 60 --threshold 100ms
+# Executar análise múltiplas vezes para comparar
+for i in {1..5}; do
+  echo "=== Execução $i ==="
+  node scripts/explain-analyzer.js --collection products
+  sleep 2
+done
 ```
 
 ---
@@ -381,11 +410,22 @@ print(`Com índice: ${timeWithIndex}ms`)
 print(`Melhoria: ${((timeWithoutIndex - timeWithIndex) / timeWithoutIndex * 100).toFixed(2)}%`)
 ```
 
-### Teste 2: Comparação de Estratégias de Índice
+### Teste 2: Comparação Manual de Estratégias
 
 ```bash
-# Executar teste comparativo automatizado
-node scripts/index-performance-test.js --collection products --test-scenarios all
+# Testar query sem índice
+echo "=== Sem índice específico ==="
+mongosh --host $CLUSTER_ENDPOINT:27017 \
+--username $DB_USERNAME --password $DB_PASSWORD \
+--ssl --sslCAFile global-bundle.pem \
+--eval "use performanceDB; db.products.find({brand: 'BrandA'}).explain('executionStats')"
+
+# Criar índice e testar novamente
+echo "=== Com índice ==="
+mongosh --host $CLUSTER_ENDPOINT:27017 \
+--username $DB_USERNAME --password $DB_PASSWORD \
+--ssl --sslCAFile global-bundle.pem \
+--eval "use performanceDB; db.products.createIndex({brand: 1}); db.products.find({brand: 'BrandA'}).explain('executionStats')"
 ```
 
 ---
