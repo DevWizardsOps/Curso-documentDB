@@ -18,6 +18,7 @@ CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
 echo "=========================================="
 echo "GRADE - Exercício 2: Planos de Execução"
 echo "Aluno: $ID"
+echo "Cluster: $CLUSTER_ENDPOINT"
 echo "=========================================="
 
 # Função para verificar e pontuar
@@ -39,12 +40,41 @@ check_and_score() {
 
 
 # Teste 1: Verificar se dados de teste foram criados (30 pontos)
-check_and_score "Base de dados de teste criada" 30 \
-"mongosh --host $CLUSTER_ENDPOINT:27017 --username \${DB_USERNAME:-docdbadmin} --password \${DB_PASSWORD:-Lab12345!} --ssl --sslCAFile global-bundle.pem --quiet --eval 'use performanceDB; print(db.products.countDocuments())' 2>/dev/null | grep -E '^[1-9][0-9]*$'"
+echo -n "Verificando: Base de dados de teste criada... "
+DB_COUNT=$(mongosh --host $CLUSTER_ENDPOINT:27017 \
+--username ${DB_USERNAME:-docdbadmin} \
+--password ${DB_PASSWORD:-Lab12345!} \
+--ssl --sslCAFile global-bundle.pem \
+--quiet --eval 'db.getSiblingDB("performanceDB").products.countDocuments()' 2>/dev/null | grep -E '^[0-9]+$' | tail -1)
+
+if [[ "$DB_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+    echo "✅ OK (+30 pontos) - $DB_COUNT documentos"
+    SCORE=$((SCORE + 30))
+else
+    echo "❌ FALHOU (0 pontos) - Retornou: '$DB_COUNT'"
+fi
 
 # Teste 2: Verificar se índices do exercício foram criados (25 pontos)
-check_and_score "Índices do exercício criados" 25 \
-"mongosh --host $CLUSTER_ENDPOINT:27017 --username \${DB_USERNAME:-docdbadmin} --password \${DB_PASSWORD:-Lab12345!} --ssl --sslCAFile global-bundle.pem --quiet --eval 'use performanceDB; const indexes = db.products.getIndexes(); const hasPrice = indexes.some(idx => idx.key.price); const hasCategory = indexes.some(idx => idx.key.category); print(hasPrice && hasCategory ? \"true\" : \"false\")' 2>/dev/null | grep -q 'true'"
+echo -n "Verificando: Índices do exercício criados... "
+INDEX_CHECK=$(mongosh --host $CLUSTER_ENDPOINT:27017 \
+--username ${DB_USERNAME:-docdbadmin} \
+--password ${DB_PASSWORD:-Lab12345!} \
+--ssl --sslCAFile global-bundle.pem \
+--quiet --eval 'const indexes = db.getSiblingDB("performanceDB").products.getIndexes(); const hasPrice = indexes.some(idx => idx.key.price); const hasCategory = indexes.some(idx => idx.key.category); print(hasPrice && hasCategory ? "true" : "false")' 2>/dev/null | grep -E '^(true|false)$' | tail -1)
+
+if [[ "$INDEX_CHECK" == "true" ]]; then
+    echo "✅ OK (+25 pontos)"
+    SCORE=$((SCORE + 25))
+else
+    echo "❌ FALHOU (0 pontos) - Retornou: '$INDEX_CHECK'"
+    # Mostrar índices existentes para debug
+    echo "   Índices encontrados:"
+    mongosh --host $CLUSTER_ENDPOINT:27017 \
+    --username ${DB_USERNAME:-docdbadmin} \
+    --password ${DB_PASSWORD:-Lab12345!} \
+    --ssl --sslCAFile global-bundle.pem \
+    --quiet --eval 'db.getSiblingDB("performanceDB").products.getIndexes().forEach(idx => print("   - " + idx.name + ": " + JSON.stringify(idx.key)))' 2>/dev/null || echo "   Erro ao listar índices"
+fi
 
 # Teste 3: Verificar script de análise de explain (25 pontos)
 check_and_score "Script explain-analyzer.js existe" 25 \
