@@ -380,53 +380,42 @@ done
 
 ---
 
-## 📋 Parte 7: Testes de Performance Comparativos
+## 📋 Parte 7: Validação das Otimizações
 
-### Teste 1: Antes vs Depois da Otimização
-
-```javascript
-// Função para medir performance
-function measureQuery(queryFunc, iterations = 100) {
-  const start = Date.now()
-  for(let i = 0; i < iterations; i++) {
-    queryFunc()
-  }
-  const end = Date.now()
-  return (end - start) / iterations
-}
-
-// Teste query sem índice
-const timeWithoutIndex = measureQuery(() => {
-  db.products.find({price: {$gte: 500}}).toArray()
-})
-
-// Teste query com índice
-const timeWithIndex = measureQuery(() => {
-  db.products.find({price: {$gte: 500}}).hint({price: 1}).toArray()
-})
-
-print(`Sem índice: ${timeWithoutIndex}ms`)
-print(`Com índice: ${timeWithIndex}ms`)
-print(`Melhoria: ${((timeWithoutIndex - timeWithIndex) / timeWithoutIndex * 100).toFixed(2)}%`)
-```
-
-### Teste 2: Comparação Manual de Estratégias
+### Teste 1: Verificar Impacto dos Índices
 
 ```bash
-# Testar query sem índice
-echo "=== Sem índice específico ==="
-mongosh --host $CLUSTER_ENDPOINT:27017 \
---username $DB_USERNAME --password $DB_PASSWORD \
---ssl --sslCAFile global-bundle.pem \
---eval "use performanceDB; db.products.find({brand: 'BrandA'}).explain('executionStats')"
+# Usar o script de análise para comparar diferentes queries
+echo "=== Analisando query simples ==="
+node scripts/explain-analyzer.js --collection products
 
-# Criar índice e testar novamente
-echo "=== Com índice ==="
+echo "=== Analisando todas as queries comuns ==="
+node scripts/explain-analyzer.js --analyze-all
+```
+
+### Teste 2: Comparar Diferentes Tipos de Query
+
+```bash
+# Conectar ao DocumentDB para testes manuais
 mongosh --host $CLUSTER_ENDPOINT:27017 \
 --username $DB_USERNAME --password $DB_PASSWORD \
---ssl --sslCAFile global-bundle.pem \
---eval "use performanceDB; db.products.createIndex({brand: 1}); db.products.find({brand: 'BrandA'}).explain('executionStats')"
+--ssl --sslCAFile global-bundle.pem
+
+# Dentro do mongosh, testar diferentes queries:
+# use performanceDB
+# 
+# // Query com índice existente (boa performance)
+# db.products.find({category: "electronics"}).explain("executionStats")
+# 
+# // Query sem índice (performance ruim)
+# db.products.find({brand: "BrandA"}).explain("executionStats")
+# 
+# // Criar índice e testar novamente
+# db.products.createIndex({brand: 1})
+# db.products.find({brand: "BrandA"}).explain("executionStats")
 ```
+
+> 💡 **Compare:** Observe a diferença entre `IXSCAN` (usa índice) vs `COLLSCAN` (scan completo) nos resultados do explain.
 
 ---
 
