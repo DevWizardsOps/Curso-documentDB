@@ -21,7 +21,12 @@
 ```bash
 # Configurar variáveis
 export ID="<seu-id>"
-export CLUSTER_ID="$ID-lab-cluster-console"
+export CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].Endpoint' \
+--output text)
+export DB_USERNAME="docdbadmin"
+export DB_PASSWORD="Lab12345!"
 
 # Criar parameter group otimizado para performance
 aws docdb create-db-cluster-parameter-group \

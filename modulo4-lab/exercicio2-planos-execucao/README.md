@@ -19,11 +19,20 @@
 ### Passo 1: Conectar ao Cluster e Preparar Dados
 
 ```bash
+# Navegar para o diretório do exercício
+cd exercicio2-planos-execucao
+
+# Baixar certificado SSL do DocumentDB
+wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+
 # Configurar variáveis de ambiente
 export ID="<seu-id>"
-export CLUSTER_ENDPOINT="$ID-lab-cluster-console.cluster-xxxxxxxxx.us-east-1.docdb.amazonaws.com"
+export CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
+--db-cluster-identifier $ID-lab-cluster-console \
+--query 'DBClusters[0].Endpoint' \
+--output text)
 export DB_USERNAME="docdbadmin"
-export DB_PASSWORD="password123"
+export DB_PASSWORD="Lab12345!"
 
 # Conectar ao DocumentDB
 mongosh --host $CLUSTER_ENDPOINT:27017 \
