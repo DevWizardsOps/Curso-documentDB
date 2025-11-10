@@ -141,6 +141,8 @@ db.products.find({
 
 ## 🎯 Parte 3: Estratégias de Indexação Avançadas
 
+> 📚 **Limitações do DocumentDB:** O DocumentDB não suporta alguns recursos do MongoDB como índices de texto ($text), índices geoespaciais 2dsphere, e algumas operações de agregação avançadas.
+
 ### Índices Compostos
 
 ```javascript
@@ -177,18 +179,22 @@ db.products.find({
 }).explain("executionStats")
 ```
 
-### Índices de Texto
+### Índices para Busca de Texto
+
+> ⚠️ **Nota:** DocumentDB não suporta índices de texto ($text). Usaremos regex otimizado.
 
 ```javascript
-// Criar índice de texto para busca
-db.products.createIndex({
-  name: "text",
-  "tags": "text"
-})
+// Criar índice para busca por nome
+db.products.createIndex({name: 1})
 
-// Query de busca textual
+// Query de busca usando regex otimizado
 db.products.find({
-  $text: {$search: "premium electronics"}
+  name: {$regex: "premium", $options: "i"}
+}).explain("executionStats")
+
+// Busca em tags usando $in para valores específicos
+db.products.find({
+  tags: {$in: ["premium", "popular"]}
 }).explain("executionStats")
 ```
 
@@ -285,7 +291,7 @@ db.orders.aggregate([
 // Query regex ineficiente
 db.products.find({name: /^Product 1/}).explain("executionStats")
 
-// Solução: Usar índice de texto ou otimizar regex
+// Solução: Otimizar regex com índice
 db.products.createIndex({name: 1})
 db.products.find({name: {$regex: "^Product 1"}}).explain("executionStats")
 ```
@@ -396,14 +402,14 @@ db.orders.drop()
 1. **Queries de Range:** 85-95% de melhoria com índices apropriados
 2. **Queries Compostas:** 70-90% de redução no tempo de execução
 3. **Agregações com Lookup:** 60-80% de melhoria
-4. **Queries de Texto:** 90-95% de melhoria com índices de texto
+4. **Queries de Busca:** 70-85% de melhoria com regex otimizado
 
 ### Estratégias de Indexação Aplicadas:
 
 - **Índices Simples:** Para queries de igualdade e range
 - **Índices Compostos:** Para queries com múltiplos filtros
 - **Índices Parciais:** Para reduzir tamanho e melhorar seletividade
-- **Índices de Texto:** Para busca textual eficiente
+- **Busca Otimizada:** Regex com índices para busca de texto
 
 ---
 
