@@ -474,4 +474,4 @@ db.orders.drop()
 
 ---
 
-[⬅️ Exercício 1](../exercicio1-metricas-avancadas/README.md) | [➡️ Exercício 3](../exercicio3-workload-optimization/README.md)
+[⬅️ Exercício 1](../exercicio1-metricas-avancadas/README.md) | [🏠 Módulo 4 Home](../README.md)

@@ -1,52 +1,24 @@
-# Módulo 5 - Replicação, Backup e Alta Disponibilidade Avançada
+# Módulo 5 - Backup e Exportação de Dados
 
-Laboratório prático para o Módulo 5 do curso de DocumentDB (6h), focado em estratégias avançadas de replicação, backup para S3, RTO/RPO otimizado e limitações de replicação cross-region.
+Laboratório prático para o Módulo 5 do curso de DocumentDB (2h), focado em estratégias de backup de longo prazo, exportação automatizada para S3 e integração com ferramentas de analytics.
 
 ## 📋 Objetivos do Laboratório
 
-- Implementar estratégias avançadas de replicação síncrona e assíncrona
-- Configurar exportação automatizada de dados para S3
-- Otimizar RTO (Recovery Time Objective) e RPO (Recovery Point Objective)
-- Explorar limitações e alternativas para replicação cross-region
-- Implementar arquiteturas de alta disponibilidade multi-região
+- Configurar exportação automatizada de dados do DocumentDB para S3
+- Implementar estratégias de backup de longo prazo e compliance
+- Integrar dados exportados com AWS Glue e ferramentas de analytics
+- Configurar monitoramento e alertas para processos de backup
 
 ## 🏗️ Estrutura do Laboratório
 
 ```
 modulo5-lab/
 ├── README.md
-├── exercicio1-replicacao-avancada/
-│   ├── README.md
-│   ├── scripts/
-│   │   ├── setup-multi-az.sh
-│   │   └── test-replication-lag.js
-│   └── terraform/
-│       ├── multi-region-setup.tf
-│       └── cross-region-backup.tf
-├── exercicio2-rto-rpo-optimization/
-│   ├── README.md
-│   ├── scripts/
-│   │   ├── rto-calculator.js
-│   │   └── automated-recovery.sh
-│   └── scenarios/
-│       ├── disaster-recovery-plan.md
-│       └── recovery-scenarios.json
-├── exercicio3-export-s3/
-│   ├── README.md
-│   ├── scripts/
-│   │   ├── export-to-s3.js
-│   │   └── schedule-exports.sh
-│   └── lambda/
-│       ├── export-function.py
-│       └── notification-handler.py
-└── exercicio4-cross-region-strategies/
+└── exercicio-backup-s3/
     ├── README.md
-    ├── scripts/
-    │   ├── cross-region-sync.js
-    │   └── region-failover.sh
-    └── architectures/
-        ├── multi-region-design.md
-        └── cost-optimization.md
+    └── scripts/
+        ├── backup-monitor.sh
+        └── backup-audit.sh
 ```
 
 ## 🚀 Pré-requisitos
@@ -59,65 +31,27 @@ modulo5-lab/
 - Python 3.8+ (para funções Lambda)
 - Conhecimento dos módulos anteriores (especialmente Módulo 2)
 
-## 📚 Exercícios
+## 📚 Exercício
 
-### Exercício 1: Replicação Avançada e Multi-AZ
-**Duração estimada:** 90 minutos
-
-Configure replicação avançada com foco em performance:
-- Otimização de replication lag
-- Configuração de read replicas em múltiplas AZs
-- Monitoramento de sincronização
-- Testes de failover automático avançado
-
-[📖 Ir para Exercício 1](./exercicio1-replicacao-avancada/README.md)
-
----
-
-### Exercício 2: Otimização de RTO/RPO
+### Exercício: Backup de Dados para S3
 **Duração estimada:** 75 minutos
 
-Implemente estratégias para minimizar tempo de recuperação:
-- Cálculo e otimização de RTO/RPO
-- Cenários de disaster recovery
-- Automação de processos de recuperação
-- Testes de recuperação em diferentes cenários
+Implemente estratégias completas de backup do DocumentDB:
+- Backup completo e incremental para S3
+- Políticas de retenção e compliance
+- Procedimentos de restore e validação
+- Monitoramento e auditoria de backups
 
-[📖 Ir para Exercício 2](./exercicio2-rto-rpo-optimization/README.md)
-
----
-
-### Exercício 3: Exportação Automatizada para S3
-**Duração estimada:** 90 minutos
-
-Configure exportação de dados para arquivamento e analytics:
-- Exportação automatizada via Lambda
-- Integração com S3 e Glue
-- Compressão e particionamento de dados
-- Monitoramento e notificações
-
-[📖 Ir para Exercício 3](./exercicio3-export-s3/README.md)
-
----
-
-### Exercício 4: Estratégias Cross-Region e Limitações
-**Duração estimada:** 105 minutos
-
-Explore alternativas para replicação entre regiões:
-- Limitações do DocumentDB para cross-region
-- Implementação de sincronização customizada
-- Arquiteturas multi-região
-- Estratégias de failover regional
-
-[📖 Ir para Exercício 4](./exercicio4-cross-region-strategies/README.md)
+[📖 Ir para o Exercício](./exercicio-backup-s3/README.md)
 
 ---
 
 ## 🎯 Roteiro de Estudo Recomendado
 
-1. **Dia 1 (2h):** Exercício 1 (replicação avançada)
-2. **Dia 2 (2h):** Exercícios 2 e 3 (RTO/RPO e S3)
-3. **Dia 3 (2h):** Exercício 4 (cross-region strategies)
+**Sessão Única (1.5h):** Exercício de Backup para S3
+- Configuração de ambiente e bucket S3
+- Implementação de diferentes tipos de backup
+- Testes de restore e validação de integridade
 
 ## 🏗️ Conceitos de Alta Disponibilidade Aplicados
 
