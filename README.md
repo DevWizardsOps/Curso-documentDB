@@ -11,10 +11,10 @@ Curso completo de AWS DocumentDB com laboratórios práticos hands-on.
 | **1** | [Visão Geral do DocumentDB](./modulo1-lab/) | 4h | 3 | Conceitos, Console AWS, CLI/SDKs |
 | **2** | [Administração e Gerenciamento](./modulo2-lab/) | 6h | 5 | Provisionamento, Backup, Failover |
 | **3** | [Segurança e Compliance](./modulo3-lab/) | 6h | 3 | Autenticação, VPC, Auditoria |
-| **4** | [Performance e Tuning](./modulo4-lab/) | 6h | 5 | Métricas, Índices, Otimização |
-| **5** | [Replicação e Alta Disponibilidade](./modulo5-lab/) | 6h | 4 | Multi-AZ, Cross-Region, RTO/RPO |
+| **4** | [Performance e Tuning](./modulo4-lab/) | 3h | 2 | Métricas Avançadas, Planos de Execução |
+| **5** | [Backup e Exportação de Dados](./modulo5-lab/) | 1.5h | 1 | Backup S3, Restore, Políticas de Retenção |
 
-**Duração Total:** 28 horas de conteúdo prático
+**Duração Total:** 20.5 horas de conteúdo prático
 
 ## 🚀 Para Instrutores
 

@@ -599,7 +599,7 @@ mongosh --host $CLUSTER_ENDPOINT:27017 \
 --username $DB_USERNAME \
 --password $DB_PASSWORD \
 --tls \
---tlsCAFile global-bundle.pem
+--tlsCAFile ~/global-bundle.pem
 
 # No mongosh, executar:
 # use backupTestDB
