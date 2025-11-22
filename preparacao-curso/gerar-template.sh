@@ -354,6 +354,13 @@ for i in $(seq 1 $NUM_ALUNOS); do
             useradd -m -s /bin/bash \${PrefixoAluno}${ALUNO_NUM}
             echo "\${PrefixoAluno}${ALUNO_NUM} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
             
+            # Copiar chave SSH do ec2-user para o aluno (permite SSH direto)
+            mkdir -p /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh
+            cp /home/ec2-user/.ssh/authorized_keys /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh/authorized_keys
+            chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh
+            chmod 700 /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh
+            chmod 600 /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh/authorized_keys
+            
             # Instalar Node.js
             curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
             yum install -y nodejs python3 python3-pip yum-utils

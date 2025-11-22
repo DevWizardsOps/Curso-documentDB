@@ -309,6 +309,13 @@ Resources:
             useradd -m -s /bin/bash ${PrefixoAluno}01
             echo "${PrefixoAluno}01 ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
             
+            # Copiar chave SSH do ec2-user para o aluno (permite SSH direto)
+            mkdir -p /home/${PrefixoAluno}01/.ssh
+            cp /home/ec2-user/.ssh/authorized_keys /home/${PrefixoAluno}01/.ssh/authorized_keys
+            chown -R ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/.ssh
+            chmod 700 /home/${PrefixoAluno}01/.ssh
+            chmod 600 /home/${PrefixoAluno}01/.ssh/authorized_keys
+            
             # Instalar Node.js
             curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
             yum install -y nodejs
@@ -480,6 +487,13 @@ BASHRC
             useradd -m -s /bin/bash ${PrefixoAluno}02
             echo "${PrefixoAluno}02 ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
             
+            # Copiar chave SSH do ec2-user para o aluno (permite SSH direto)
+            mkdir -p /home/${PrefixoAluno}02/.ssh
+            cp /home/ec2-user/.ssh/authorized_keys /home/${PrefixoAluno}02/.ssh/authorized_keys
+            chown -R ${PrefixoAluno}02:${PrefixoAluno}02 /home/${PrefixoAluno}02/.ssh
+            chmod 700 /home/${PrefixoAluno}02/.ssh
+            chmod 600 /home/${PrefixoAluno}02/.ssh/authorized_keys
+            
             # Instalar Node.js
             curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
             yum install -y nodejs
@@ -613,16 +627,18 @@ Outputs:
     Value: !Sub |
       IP: ${Aluno01Instance.PublicIp}
       IAM User: ${Aluno01User}
-      Console Password: Armazenada no Secrets Manager (${ConsolePasswordSecret})
-      SSH: ssh -i ${KeyPairName}.pem ec2-user@${Aluno01Instance.PublicIp}
+      Console Password: Extractta@2026
+      SSH Direto: ssh -i ${KeyPairName}.pem ${PrefixoAluno}01@${Aluno01Instance.PublicIp}
+      SSH via ec2-user: ssh -i ${KeyPairName}.pem ec2-user@${Aluno01Instance.PublicIp}
 
   Aluno02Info:
     Description: 'IP e credenciais do Aluno 02'
     Value: !Sub |
       IP: ${Aluno02Instance.PublicIp}
       IAM User: ${Aluno02User}
-      Console Password: Armazenada no Secrets Manager (${ConsolePasswordSecret})
-      SSH: ssh -i ${KeyPairName}.pem ec2-user@${Aluno02Instance.PublicIp}
+      Console Password: Extractta@2026
+      SSH Direto: ssh -i ${KeyPairName}.pem ${PrefixoAluno}02@${Aluno02Instance.PublicIp}
+      SSH via ec2-user: ssh -i ${KeyPairName}.pem ec2-user@${Aluno02Instance.PublicIp}
 
   ConsoleLoginURL:
     Description: 'URL para login no console AWS'
@@ -646,6 +662,12 @@ Outputs:
       
       === ACESSO SSH ===
       Chave SSH: ${KeyPairName}.pem
-      Comando: ssh -i ${KeyPairName}.pem ec2-user@IP-PUBLICO
-      Depois: sudo su - ${PrefixoAluno}XX
+      
+      Opção 1 - SSH Direto (Recomendado):
+      ssh -i ${KeyPairName}.pem ${PrefixoAluno}XX@IP-PUBLICO
+      
+      Opção 2 - Via ec2-user:
+      ssh -i ${KeyPairName}.pem ec2-user@IP-PUBLICO
+      sudo su - ${PrefixoAluno}XX
+      
       AWS CLI já configurado!

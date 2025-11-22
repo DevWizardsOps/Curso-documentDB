@@ -68,14 +68,15 @@ cd preparacao-curso/
    chmod 400 nome-da-chave.pem
    ```
 
-4. **Conecte via SSH:**
+4. **Conecte via SSH diretamente ao seu usuário:**
+   ```bash
+   ssh -i nome-da-chave.pem alunoXX@SEU-IP-PUBLICO  # XX = seu número
+   ```
+   
+   Alternativa (via ec2-user):
    ```bash
    ssh -i nome-da-chave.pem ec2-user@SEU-IP-PUBLICO
-   ```
-
-5. **Mude para seu usuário:**
-   ```bash
-   sudo su - alunoXX  # XX = seu número
+   sudo su - alunoXX
    ```
 
 ### Verificar Configuração

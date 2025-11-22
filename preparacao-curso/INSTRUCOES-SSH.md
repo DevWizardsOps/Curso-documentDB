@@ -26,23 +26,30 @@ chmod 400 <nome-da-stack>-key.pem
 
 ### 2. Conectar via SSH
 
+**Opção 1 - Conexão Direta ao Usuário do Aluno (Recomendado):**
+
+```bash
+ssh -i <nome-da-stack>-key.pem aluno01@<IP-PUBLICO>
+```
+
+Você já estará logado como seu usuário do curso!
+
+**Opção 2 - Via ec2-user (Alternativa):**
+
 ```bash
 ssh -i <nome-da-stack>-key.pem ec2-user@<IP-PUBLICO>
 ```
 
-Substitua:
-- `<nome-da-stack>-key.pem` pelo nome real do arquivo
-- `<IP-PUBLICO>` pelo IP da instância (fornecido no output do script)
-
-### 3. Mudar para o usuário do aluno
-
-Após conectar como `ec2-user`:
+Depois mude para seu usuário:
 
 ```bash
 sudo su - aluno01
 ```
 
-(Substitua `aluno01` pelo usuário correto)
+**Substitua:**
+- `<nome-da-stack>-key.pem` pelo nome real do arquivo
+- `<IP-PUBLICO>` pelo IP da instância (fornecido no output do script)
+- `aluno01` pelo seu número de aluno correto
 
 ## 👥 Distribuindo Acesso aos Alunos
 

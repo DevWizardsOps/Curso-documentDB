@@ -31,16 +31,21 @@ https://[ACCOUNT-ID].signin.aws.amazon.com/console
 
 ### Conectar à sua instância
 
-**Aluno 01:**
+**Aluno 01 - Conexão Direta (Recomendado):**
 ```bash
-ssh -i [stack-name]-key.pem ec2-user@[IP-ALUNO-01]
-sudo su - aluno01
+ssh -i [stack-name]-key.pem aluno01@[IP-ALUNO-01]
 ```
 
-**Aluno 02:**
+**Aluno 02 - Conexão Direta (Recomendado):**
 ```bash
-ssh -i [stack-name]-key.pem ec2-user@[IP-ALUNO-02]
-sudo su - aluno02
+ssh -i [stack-name]-key.pem aluno02@[IP-ALUNO-02]
+```
+
+**Alternativa - Via ec2-user:**
+```bash
+# Se preferir, pode conectar via ec2-user e depois trocar
+ssh -i [stack-name]-key.pem ec2-user@[IP-PUBLICO]
+sudo su - alunoXX
 ```
 
 ## 🛠️ Verificar Configuração
