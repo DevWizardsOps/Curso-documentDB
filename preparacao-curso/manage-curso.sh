@@ -218,9 +218,118 @@ manage_instances() {
     esac
 }
 
+# Função para forçar limpeza de recursos manualmente
+force_cleanup_resources() {
+    local stack_name=$1
+    
+    log "Iniciando limpeza forçada de recursos..."
+    
+    # Obter região
+    REGION=$(aws configure get region)
+    
+    # 1. Deletar instâncias EC2
+    log "Procurando instâncias EC2 da stack..."
+    INSTANCE_IDS=$(aws ec2 describe-instances \
+        --filters "Name=tag:aws:cloudformation:stack-name,Values=$stack_name" "Name=instance-state-name,Values=running,stopped,pending" \
+        --query 'Reservations[].Instances[].InstanceId' \
+        --output text)
+    
+    if [ ! -z "$INSTANCE_IDS" ]; then
+        warning "Terminando instâncias EC2: $INSTANCE_IDS"
+        aws ec2 terminate-instances --instance-ids $INSTANCE_IDS
+        log "Aguardando terminação das instâncias..."
+        aws ec2 wait instance-terminated --instance-ids $INSTANCE_IDS 2>/dev/null || true
+        success "Instâncias EC2 terminadas"
+    fi
+    
+    # 2. Deletar clusters DocumentDB
+    log "Procurando clusters DocumentDB da stack..."
+    DOCDB_CLUSTERS=$(aws docdb describe-db-clusters \
+        --query "DBClusters[?contains(DBClusterIdentifier, '$stack_name')].DBClusterIdentifier" \
+        --output text 2>/dev/null)
+    
+    if [ ! -z "$DOCDB_CLUSTERS" ]; then
+        for cluster in $DOCDB_CLUSTERS; do
+            warning "Deletando cluster DocumentDB: $cluster"
+            
+            # Deletar instâncias do cluster primeiro
+            INSTANCES=$(aws docdb describe-db-clusters \
+                --db-cluster-identifier $cluster \
+                --query 'DBClusters[0].DBClusterMembers[].DBInstanceIdentifier' \
+                --output text 2>/dev/null)
+            
+            for instance in $INSTANCES; do
+                log "Deletando instância: $instance"
+                aws docdb delete-db-instance \
+                    --db-instance-identifier $instance \
+                    --skip-final-snapshot 2>/dev/null || true
+            done
+            
+            # Aguardar instâncias serem deletadas
+            sleep 10
+            
+            # Deletar cluster
+            aws docdb delete-db-cluster \
+                --db-cluster-identifier $cluster \
+                --skip-final-snapshot 2>/dev/null || true
+        done
+        success "Clusters DocumentDB deletados"
+    fi
+    
+    # 3. Deletar Security Groups (exceto default)
+    log "Procurando Security Groups da stack..."
+    sleep 5  # Aguardar recursos serem liberados
+    
+    SG_IDS=$(aws ec2 describe-security-groups \
+        --filters "Name=tag:aws:cloudformation:stack-name,Values=$stack_name" \
+        --query 'SecurityGroups[?GroupName!=`default`].GroupId' \
+        --output text 2>/dev/null)
+    
+    if [ ! -z "$SG_IDS" ]; then
+        for sg in $SG_IDS; do
+            warning "Deletando Security Group: $sg"
+            aws ec2 delete-security-group --group-id $sg 2>/dev/null || warning "Não foi possível deletar $sg (pode estar em uso)"
+        done
+    fi
+    
+    # 4. Deletar IAM Users e Access Keys
+    log "Procurando usuários IAM da stack..."
+    IAM_USERS=$(aws iam list-users \
+        --query "Users[?contains(UserName, '$stack_name')].UserName" \
+        --output text 2>/dev/null)
+    
+    if [ ! -z "$IAM_USERS" ]; then
+        for user in $IAM_USERS; do
+            warning "Deletando usuário IAM: $user"
+            
+            # Remover access keys
+            ACCESS_KEYS=$(aws iam list-access-keys --user-name $user --query 'AccessKeyMetadata[].AccessKeyId' --output text 2>/dev/null)
+            for key in $ACCESS_KEYS; do
+                aws iam delete-access-key --user-name $user --access-key-id $key 2>/dev/null || true
+            done
+            
+            # Remover login profile
+            aws iam delete-login-profile --user-name $user 2>/dev/null || true
+            
+            # Remover de grupos
+            GROUPS=$(aws iam list-groups-for-user --user-name $user --query 'Groups[].GroupName' --output text 2>/dev/null)
+            for group in $GROUPS; do
+                aws iam remove-user-from-group --user-name $user --group-name $group 2>/dev/null || true
+            done
+            
+            # Deletar usuário
+            aws iam delete-user --user-name $user 2>/dev/null || true
+        done
+        success "Usuários IAM deletados"
+    fi
+    
+    success "Limpeza forçada concluída"
+}
+
 # Função para limpar recursos
 cleanup_stack() {
     local stack_name=$1
+    local force_mode=$2
     
     if [ -z "$stack_name" ]; then
         error "Nome da stack não fornecido"
@@ -292,6 +401,21 @@ cleanup_stack() {
         fi
     fi
     
+    # Modo force: limpar recursos manualmente primeiro
+    if [ "$force_mode" = "force" ]; then
+        echo -e "\n${YELLOW}⚡ MODO FORCE ATIVADO${NC}"
+        echo "Recursos serão deletados manualmente antes da stack"
+        echo ""
+        read -p "Continuar com limpeza forçada? (y/N): " CONFIRM_FORCE
+        
+        if [[ $CONFIRM_FORCE =~ ^[Yy]$ ]]; then
+            force_cleanup_resources "$stack_name"
+        else
+            error "Operação cancelada"
+            return 1
+        fi
+    fi
+    
     echo ""
     read -p "Digite 'DELETE' para confirmar a deleção da stack CloudFormation: " CONFIRM
     
@@ -306,9 +430,12 @@ cleanup_stack() {
     if [ $? -eq 0 ]; then
         success "Comando de deleção enviado"
         log "Aguardando conclusão da deleção..."
-        aws cloudformation wait stack-delete-complete --stack-name $stack_name
         
-        if [ $? -eq 0 ]; then
+        # Usar timeout para evitar espera infinita
+        timeout 600 aws cloudformation wait stack-delete-complete --stack-name $stack_name 2>/dev/null
+        WAIT_RESULT=$?
+        
+        if [ $WAIT_RESULT -eq 0 ]; then
             success "Stack deletada com sucesso!"
             
             # Limpar arquivo local de informações da chave SSH se existir
@@ -318,8 +445,27 @@ cleanup_stack() {
             fi
             
             echo -e "\n${GREEN}✨ Limpeza completa realizada!${NC}"
+        elif [ $WAIT_RESULT -eq 124 ]; then
+            warning "Timeout aguardando deleção (10 minutos)"
+            echo "Verifique o status da stack no console AWS"
         else
             error "Erro ao aguardar conclusão da deleção"
+            echo ""
+            echo -e "${YELLOW}💡 Dica: Se a stack falhou ao deletar, tente:${NC}"
+            echo "1. Verificar o motivo no console CloudFormation"
+            echo "2. Usar a opção 8 novamente e escolher modo FORCE"
+            echo "3. Deletar recursos manualmente e tentar novamente"
+            
+            # Verificar status da stack
+            STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $stack_name --query 'Stacks[0].StackStatus' --output text 2>/dev/null)
+            if [ "$STACK_STATUS" = "DELETE_FAILED" ]; then
+                error "Stack em estado DELETE_FAILED"
+                echo ""
+                read -p "Tentar limpeza forçada agora? (y/N): " RETRY_FORCE
+                if [[ $RETRY_FORCE =~ ^[Yy]$ ]]; then
+                    cleanup_stack "$stack_name" "force"
+                fi
+            fi
         fi
     else
         error "Erro ao deletar stack"
@@ -419,7 +565,8 @@ show_menu() {
     echo "6. Relatório de custos"
     echo "7. Listar buckets S3 do curso"
     echo "8. Deletar stack (CUIDADO!)"
-    echo "9. Sair"
+    echo "9. Deletar stack com FORCE (recursos manuais primeiro)"
+    echo "10. Sair"
     echo ""
 }
 
@@ -461,6 +608,10 @@ while true; do
             cleanup_stack "$stack_name"
             ;;
         9)
+            read -p "Nome da stack: " stack_name
+            cleanup_stack "$stack_name" "force"
+            ;;
+        10)
             success "Até logo!"
             exit 0
             ;;
