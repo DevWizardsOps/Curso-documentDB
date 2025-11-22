@@ -10,7 +10,7 @@
 ## ⏱️ Duração Estimada
 60 minutos
 
-> ⚠️ **Atenção:** Para evitar conflitos de nomes, todos os recursos criados neste laboratório devem ser prefixados com um identificador único seu (ex: seu nome ou iniciais). Ex: `seunome-docdb-lab-subnet-group`.
+> ⚠️ **Atenção:** Para evitar conflitos de nomes, todos os recursos criados neste laboratório devem ser prefixados com um identificador único seu (ex: seu nome ou iniciais). Ex: `seu-id-docdb-lab-subnet-group`.
 
 ## 📚 Parte 1: Provisionamento via AWS Console
 
@@ -130,7 +130,7 @@ cd terraform/
 Crie um arquivo `terraform.tfvars` com seu identificador único:
 
 ```hcl
-student_id         = "seunome" // IMPORTANTE: Use um ID único!
+student_id         = "seu-id" // IMPORTANTE: Use um ID único!
 cluster_identifier = "lab-cluster-terraform"
 master_username    = "docdbadmin"
 master_password    = "Lab12345!"

@@ -18,13 +18,13 @@ usage() {
     echo ""
     echo "Parâmetros:"
     echo "  snapshot-id      : ID do snapshot a ser restaurado"
-    echo "  novo-cluster-id  : ID do novo cluster a ser criado (ex: seunome-cluster-restaurado)"
+    echo "  novo-cluster-id  : ID do novo cluster a ser criado (ex: seu-id-cluster-restaurado)"
     echo "  instance-class   : Classe da instância (padrão: db.t3.medium)"
     echo "  instance-count   : Número de instâncias (padrão: 1)"
     echo ""
     echo "Exemplos:"
-    echo "  $0 seunome-lab-snapshot-001 seunome-lab-cluster-restored"
-    echo "  $0 seunome-lab-snapshot-001 seunome-lab-cluster-dev db.t3.medium 2"
+    echo "  $0 seu-id-lab-snapshot-001 seu-id-lab-cluster-restored"
+    echo "  $0 seu-id-lab-snapshot-001 seu-id-lab-cluster-dev db.t3.medium 2"
     exit 1
 }
 
