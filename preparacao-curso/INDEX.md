@@ -16,7 +16,13 @@
    - Comandos de verificação
    - Troubleshooting básico
 
-3. **[INSTRUCOES-SSH.md](./INSTRUCOES-SSH.md)**
+3. **[DOWNLOAD-CHAVE-S3.md](./DOWNLOAD-CHAVE-S3.md)** 🆕
+   - Como baixar a chave SSH do S3
+   - Passo a passo via Console AWS
+   - Passo a passo via AWS CLI
+   - Troubleshooting de download
+
+4. **[INSTRUCOES-SSH.md](./INSTRUCOES-SSH.md)**
    - Como funcionam as chaves SSH
    - Como conectar às instâncias
    - Problemas comuns e soluções

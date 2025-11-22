@@ -209,6 +209,46 @@ else
             
             # Remover chave pública (não é mais necessária)
             rm -f ${KEY_FILE}.pub
+            
+            # Upload da chave privada para S3 (para distribuição aos alunos)
+            log "Fazendo upload da chave privada para S3..."
+            
+            # Criar estrutura de diretório: ano/mes/dia
+            S3_KEY_PATH="$(date +%Y)/$(date +%m)/$(date +%d)/${KEY_FILE}"
+            S3_BUCKET="${STACK_NAME}-keys-${ACCOUNT_ID}"
+            
+            # Criar bucket se não existir
+            if ! aws s3 ls "s3://${S3_BUCKET}" 2>&1 | grep -q 'NoSuchBucket'; then
+                log "Bucket já existe: ${S3_BUCKET}"
+            else
+                log "Criando bucket S3: ${S3_BUCKET}"
+                aws s3 mb "s3://${S3_BUCKET}" --region $REGION
+                
+                # Bloquear acesso público
+                aws s3api put-public-access-block \
+                    --bucket ${S3_BUCKET} \
+                    --public-access-block-configuration \
+                    "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+            fi
+            
+            # Upload da chave
+            aws s3 cp ${KEY_FILE} "s3://${S3_BUCKET}/${S3_KEY_PATH}" \
+                --metadata "stack-name=${STACK_NAME},created-date=$(date -Iseconds)" \
+                --region $REGION
+            
+            if [ $? -eq 0 ]; then
+                success "Chave SSH enviada para S3: s3://${S3_BUCKET}/${S3_KEY_PATH}"
+                
+                # Gerar URL de console para download
+                S3_CONSOLE_URL="https://s3.console.aws.amazon.com/s3/object/${S3_BUCKET}?region=${REGION}&prefix=${S3_KEY_PATH}"
+                
+                # Salvar informações para uso posterior
+                echo "S3_BUCKET=${S3_BUCKET}" > .ssh-key-info
+                echo "S3_KEY_PATH=${S3_KEY_PATH}" >> .ssh-key-info
+                echo "S3_CONSOLE_URL=${S3_CONSOLE_URL}" >> .ssh-key-info
+            else
+                warning "Falha ao enviar chave para S3 (não crítico)"
+            fi
         else
             error "Falha ao importar chave para AWS"
             exit 1
@@ -366,20 +406,45 @@ if [ $? -eq 0 ]; then
         echo "  Usuários: ${STACK_NAME}-${PREFIXO_ALUNO}01, ${STACK_NAME}-${PREFIXO_ALUNO}02"
         echo "  Senha padrão: Extractta@2026"
         echo ""
-        echo -e "${GREEN}🔑 Chave SSH:${NC}"
-        echo "  Arquivo: $(pwd)/$KEY_FILE"
-        echo "  IMPORTANTE: Guarde este arquivo em local seguro!"
+        echo -e "${GREEN}🔑 CHAVE SSH:${NC}"
+        echo "  📁 Arquivo Local: $(pwd)/$KEY_FILE"
+        echo "  ⚠️  IMPORTANTE: Guarde este arquivo em local seguro!"
         echo ""
-        echo -e "${GREEN}🔌 Para conectar às instâncias via SSH:${NC}"
+        
+        # Mostrar informações do S3 se disponível
+        if [ -f ".ssh-key-info" ]; then
+            source .ssh-key-info
+            echo -e "${GREEN}☁️  CHAVE NO S3 (Para Distribuição):${NC}"
+            echo "  📦 Bucket: ${S3_BUCKET}"
+            echo "  📂 Caminho: ${S3_KEY_PATH}"
+            echo ""
+            echo -e "${BLUE}🔗 Link para Download (Console AWS):${NC}"
+            echo "  ${S3_CONSOLE_URL}"
+            echo ""
+            echo -e "${YELLOW}📋 Instruções para os Alunos:${NC}"
+            echo "  1. Acesse o link acima (precisa estar logado no Console AWS)"
+            echo "  2. Clique em 'Download' ou 'Baixar'"
+            echo "  3. Salve como: ${KEY_FILE}"
+            echo "  4. Execute: chmod 400 ${KEY_FILE}"
+            echo ""
+            echo -e "${YELLOW}📋 Ou via AWS CLI:${NC}"
+            echo "  aws s3 cp s3://${S3_BUCKET}/${S3_KEY_PATH} ${KEY_FILE}"
+            echo "  chmod 400 ${KEY_FILE}"
+            echo ""
+        fi
+        
+        echo -e "${GREEN}🔌 CONEXÃO SSH (Recomendado):${NC}"
+        echo "  ssh -i $KEY_FILE ${PREFIXO_ALUNO}XX@IP-PUBLICO"
+        echo ""
+        echo -e "${GREEN}🔌 CONEXÃO SSH (Alternativa via ec2-user):${NC}"
         echo "  ssh -i $KEY_FILE ec2-user@IP-PUBLICO"
-        echo ""
-        echo -e "${GREEN}👤 Depois de conectar:${NC}"
         echo "  sudo su - ${PREFIXO_ALUNO}XX"
-        echo "  (As credenciais AWS já estão configuradas!)"
         echo ""
         echo -e "${YELLOW}💡 Dicas:${NC}"
-        echo "  • Distribua o arquivo $KEY_FILE para os alunos"
-        echo "  • Compartilhe a URL do console e a senha: Extractta@2026"
+        echo "  • Compartilhe o link do S3 com os alunos"
+        echo "  • Ou distribua o arquivo $KEY_FILE diretamente"
+        echo "  • Senha do console: Extractta@2026"
+        echo "  • As credenciais AWS já estão configuradas nas instâncias"
         echo ""
         echo -e "${GREEN}✨ Ambiente pronto para o curso! ✨${NC}"
         
