@@ -1,14 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Ambiente para Curso DocumentDB - Instâncias EC2 + Usuários IAM'
+Description: 'Ambiente para Curso DocumentDB - Instancias EC2 + Usuarios IAM'
 
 Parameters:
-  NumeroAlunos:
-    Type: Number
-    Default: 2
-    MinValue: 1
-    MaxValue: 10
-    Description: 'Número de alunos (1-10)'
-    
   PrefixoAluno:
     Type: String
     Default: 'aluno'
@@ -16,16 +9,20 @@ Parameters:
     
   VpcId:
     Type: AWS::EC2::VPC::Id
-    Description: 'VPC onde criar as instâncias'
+    Description: 'VPC onde criar as instancias'
     
   SubnetId:
     Type: AWS::EC2::Subnet::Id
-    Description: 'Subnet pública para as instâncias'
+    Description: 'Subnet publica para as instancias'
     
   AllowedCIDR:
     Type: String
     Default: '0.0.0.0/0'
     Description: 'CIDR permitido para SSH'
+    
+  KeyPairName:
+    Type: String
+    Description: 'Nome da chave SSH existente (a mesma sera usada para todas as instancias)'
 
 Mappings:
   RegionMap:
@@ -42,20 +39,13 @@ Mappings:
     eu-central-1:
       AMI: ami-0f454ec961da9a046
 
-Conditions:
-  CreateAluno01: !Not [!Equals [!Ref NumeroAlunos, 0]]
-  CreateAluno02: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1]]]
-  CreateAluno03: !And [!Not [!Equals [!Ref NumeroAlunos, 0]], !Not [!Equals [!Ref NumeroAlunos, 1]], !Not [!Equals [!Ref NumeroAlunos, 2]]]
-  CreateAluno04: !And [!Condition CreateAluno03, !Not [!Equals [!Ref NumeroAlunos, 3]]]
-  CreateAluno05: !And [!Condition CreateAluno04, !Not [!Equals [!Ref NumeroAlunos, 4]]]
-
 Resources:
   # Security Group para alunos
   AlunosSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: !Sub '${AWS::StackName}-alunos-sg'
-      GroupDescription: 'Security Group para instâncias dos alunos'
+      GroupDescription: 'Security Group para instancias dos alunos'
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -121,7 +111,7 @@ Resources:
                   StringLike:
                     'ec2:ResourceTag/Purpose': 'Curso DocumentDB*'
               
-              # CloudWatch - Monitoramento e métricas
+              # CloudWatch - Monitoramento e metricas
               - Effect: Allow
                 Action:
                   - 'cloudwatch:GetMetricStatistics'
@@ -136,7 +126,7 @@ Resources:
                   - 'cloudwatch:DeleteDashboards'
                 Resource: '*'
               
-              # CloudWatch Logs - Visualização de logs
+              # CloudWatch Logs - Visualizacao de logs
               - Effect: Allow
                 Action:
                   - 'logs:DescribeLogGroups'
@@ -172,7 +162,7 @@ Resources:
                   StringLike:
                     'events:RuleName': !Sub '${AWS::StackName}-*'
               
-              # Lambda - Funções básicas para automação
+              # Lambda - Funcoes basicas para automacao
               - Effect: Allow
                 Action:
                   - 'lambda:CreateFunction'
@@ -184,20 +174,20 @@ Resources:
                   - 'lambda:ListFunctions'
                 Resource: !Sub 'arn:aws:lambda:*:${AWS::AccountId}:function:${AWS::StackName}-*'
               
-              # KMS - Apenas visualização de chaves
+              # KMS - Apenas visualizacao de chaves
               - Effect: Allow
                 Action:
                   - 'kms:Describe*'
                   - 'kms:List*'
                 Resource: '*'
               
-              # STS - Identificação do usuário
+              # STS - Identificacao do usuario
               - Effect: Allow
                 Action:
                   - 'sts:GetCallerIdentity'
                 Resource: '*'
 
-  # IAM Role para instâncias EC2
+  # IAM Role para instancias EC2
   EC2Role:
     Type: AWS::IAM::Role
     Properties:
@@ -217,7 +207,7 @@ Resources:
       Roles:
         - !Ref EC2Role
 
-  # S3 Bucket para laboratórios
+  # S3 Bucket para laboratorios
   LabsBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -229,15 +219,7 @@ Resources:
         RestrictPublicBuckets: true
 
   # Recursos do Aluno 01
-  Aluno01KeyPair:
-    Condition: CreateAluno01
-    Type: AWS::EC2::KeyPair
-    Properties:
-      KeyName: !Sub '${AWS::StackName}-${PrefixoAluno}01-key'
-      KeyType: rsa
-
   Aluno01User:
-    Condition: CreateAluno01
     Type: AWS::IAM::User
     Properties:
       UserName: !Sub '${AWS::StackName}-${PrefixoAluno}01'
@@ -245,18 +227,16 @@ Resources:
         - !Ref CursoDocumentDBGroup
 
   Aluno01AccessKey:
-    Condition: CreateAluno01
     Type: AWS::IAM::AccessKey
     Properties:
       UserName: !Ref Aluno01User
 
   Aluno01Instance:
-    Condition: CreateAluno01
     Type: AWS::EC2::Instance
     Properties:
       ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
       InstanceType: t3.micro
-      KeyName: !Ref Aluno01KeyPair
+      KeyName: !Ref KeyPairName
       SecurityGroupIds:
         - !Ref AlunosSecurityGroup
       SubnetId: !Ref SubnetId
@@ -309,14 +289,84 @@ Resources:
             # Instalar dependências Python
             sudo -u ${PrefixoAluno}01 pip3 install --user boto3
             
-            # Criar projeto Node.js
-            sudo -u ${PrefixoAluno}01 mkdir -p /home/${PrefixoAluno}01/nodejs-project
-            cd /home/${PrefixoAluno}01/nodejs-project
-            sudo -u ${PrefixoAluno}01 npm init -y
-            sudo -u ${PrefixoAluno}01 npm install @aws-sdk/client-docdb @aws-sdk/client-cloudwatch
-            
             # Criar diretório para laboratórios
             sudo -u ${PrefixoAluno}01 mkdir -p /home/${PrefixoAluno}01/documentdb-labs
+            
+            # Criar arquivo de boas-vindas com instruções
+            cat > /home/${PrefixoAluno}01/BEM-VINDO.txt << 'WELCOME'
+╔══════════════════════════════════════════════════════════════╗
+║              BEM-VINDO AO CURSO DOCUMENTDB                   ║
+╚══════════════════════════════════════════════════════════════╝
+
+Olá ${PrefixoAluno}01!
+
+Seu ambiente está configurado e pronto para uso.
+
+📋 INFORMAÇÕES DO AMBIENTE:
+  - Usuário Linux: ${PrefixoAluno}01
+  - Usuário AWS IAM: ${AWS::StackName}-${PrefixoAluno}01
+  - Região AWS: ${AWS::Region}
+  - Chave SSH: ${KeyPairName}
+
+🔧 FERRAMENTAS INSTALADAS:
+  ✓ AWS CLI (já configurado com suas credenciais)
+  ✓ MongoDB Shell (mongosh)
+  ✓ Node.js 18.x
+  ✓ Python 3 + pip
+  ✓ Terraform
+  ✓ Git
+
+📁 DIRETÓRIOS:
+  - Laboratórios: ~/documentdb-labs
+  - Certificado SSL: ~/global-bundle.pem
+
+🚀 PRIMEIROS PASSOS:
+  1. Teste o AWS CLI:
+     aws sts get-caller-identity
+
+  2. Liste recursos disponíveis:
+     aws docdb describe-db-clusters
+
+  3. Acesse o diretório de labs:
+     cd ~/documentdb-labs
+
+💡 DICAS:
+  - Suas credenciais AWS já estão configuradas
+  - Use 'mongosh' para conectar ao DocumentDB
+  - O certificado SSL está em ~/global-bundle.pem
+
+📚 DOCUMENTAÇÃO:
+  - AWS DocumentDB: https://docs.aws.amazon.com/documentdb/
+  - MongoDB Shell: https://docs.mongodb.com/mongodb-shell/
+
+Bom curso! 🎓
+WELCOME
+            
+            chown ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/BEM-VINDO.txt
+            
+            # Criar arquivo .bashrc customizado
+            cat >> /home/${PrefixoAluno}01/.bashrc << 'BASHRC'
+
+# Customizações do Curso DocumentDB
+export PS1='\[\033[01;32m\]\u@documentdb-lab\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+# Aliases úteis
+alias ll='ls -lah'
+alias labs='cd ~/documentdb-labs'
+alias awsid='aws sts get-caller-identity'
+
+# Mostrar boas-vindas no primeiro login
+if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then
+    cat ~/BEM-VINDO.txt
+    touch ~/.welcome_shown
+fi
+
+echo ""
+echo "💡 Digite 'cat ~/BEM-VINDO.txt' para ver as informações do ambiente"
+echo ""
+BASHRC
+            
+            chown ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/.bashrc
             
             # Ajustar permissões
             chown -R ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/
@@ -333,15 +383,7 @@ Resources:
           Value: 'Curso DocumentDB'
 
   # Recursos do Aluno 02
-  Aluno02KeyPair:
-    Condition: CreateAluno02
-    Type: AWS::EC2::KeyPair
-    Properties:
-      KeyName: !Sub '${AWS::StackName}-${PrefixoAluno}02-key'
-      KeyType: rsa
-
   Aluno02User:
-    Condition: CreateAluno02
     Type: AWS::IAM::User
     Properties:
       UserName: !Sub '${AWS::StackName}-${PrefixoAluno}02'
@@ -349,18 +391,16 @@ Resources:
         - !Ref CursoDocumentDBGroup
 
   Aluno02AccessKey:
-    Condition: CreateAluno02
     Type: AWS::IAM::AccessKey
     Properties:
       UserName: !Ref Aluno02User
 
   Aluno02Instance:
-    Condition: CreateAluno02
     Type: AWS::EC2::Instance
     Properties:
       ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
       InstanceType: t3.micro
-      KeyName: !Ref Aluno02KeyPair
+      KeyName: !Ref KeyPairName
       SecurityGroupIds:
         - !Ref AlunosSecurityGroup
       SubnetId: !Ref SubnetId
@@ -389,26 +429,113 @@ Resources:
             
             # Instalar Node.js
             curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-            yum install -y nodejs python3 python3-pip yum-utils
+            yum install -y nodejs
+            
+            # Instalar Python 3 e pip
+            yum install -y python3 python3-pip
+            
+            # Instalar Terraform
+            yum install -y yum-utils
             yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
             yum install -y terraform
             
-            # Configurar AWS CLI
+            # Configurar AWS CLI para o aluno
             sudo -u ${PrefixoAluno}02 aws configure set aws_access_key_id ${AccessKey}
             sudo -u ${PrefixoAluno}02 aws configure set aws_secret_access_key ${SecretKey}
             sudo -u ${PrefixoAluno}02 aws configure set default.region ${AWS::Region}
             sudo -u ${PrefixoAluno}02 aws configure set default.output json
             
-            # Setup do ambiente
+            # Baixar certificado SSL do DocumentDB
             cd /home/${PrefixoAluno}02
             wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
             chown ${PrefixoAluno}02:${PrefixoAluno}02 global-bundle.pem
+            
+            # Instalar dependências Python
             sudo -u ${PrefixoAluno}02 pip3 install --user boto3
-            sudo -u ${PrefixoAluno}02 mkdir -p /home/${PrefixoAluno}02/nodejs-project /home/${PrefixoAluno}02/documentdb-labs
-            cd /home/${PrefixoAluno}02/nodejs-project
-            sudo -u ${PrefixoAluno}02 npm init -y
-            sudo -u ${PrefixoAluno}02 npm install @aws-sdk/client-docdb @aws-sdk/client-cloudwatch
+            
+            # Criar diretório para laboratórios
+            sudo -u ${PrefixoAluno}02 mkdir -p /home/${PrefixoAluno}02/documentdb-labs
+            
+            # Criar arquivo de boas-vindas com instruções
+            cat > /home/${PrefixoAluno}02/BEM-VINDO.txt << 'WELCOME'
+╔══════════════════════════════════════════════════════════════╗
+║              BEM-VINDO AO CURSO DOCUMENTDB                   ║
+╚══════════════════════════════════════════════════════════════╝
+
+Olá ${PrefixoAluno}02!
+
+Seu ambiente está configurado e pronto para uso.
+
+📋 INFORMAÇÕES DO AMBIENTE:
+  - Usuário Linux: ${PrefixoAluno}02
+  - Usuário AWS IAM: ${AWS::StackName}-${PrefixoAluno}02
+  - Região AWS: ${AWS::Region}
+  - Chave SSH: ${KeyPairName}
+
+🔧 FERRAMENTAS INSTALADAS:
+  ✓ AWS CLI (já configurado com suas credenciais)
+  ✓ MongoDB Shell (mongosh)
+  ✓ Node.js 18.x
+  ✓ Python 3 + pip
+  ✓ Terraform
+  ✓ Git
+
+📁 DIRETÓRIOS:
+  - Laboratórios: ~/documentdb-labs
+  - Certificado SSL: ~/global-bundle.pem
+
+🚀 PRIMEIROS PASSOS:
+  1. Teste o AWS CLI:
+     aws sts get-caller-identity
+
+  2. Liste recursos disponíveis:
+     aws docdb describe-db-clusters
+
+  3. Acesse o diretório de labs:
+     cd ~/documentdb-labs
+
+💡 DICAS:
+  - Suas credenciais AWS já estão configuradas
+  - Use 'mongosh' para conectar ao DocumentDB
+  - O certificado SSL está em ~/global-bundle.pem
+
+📚 DOCUMENTAÇÃO:
+  - AWS DocumentDB: https://docs.aws.amazon.com/documentdb/
+  - MongoDB Shell: https://docs.mongodb.com/mongodb-shell/
+
+Bom curso! 🎓
+WELCOME
+            
+            chown ${PrefixoAluno}02:${PrefixoAluno}02 /home/${PrefixoAluno}02/BEM-VINDO.txt
+            
+            # Criar arquivo .bashrc customizado
+            cat >> /home/${PrefixoAluno}02/.bashrc << 'BASHRC'
+
+# Customizações do Curso DocumentDB
+export PS1='\[\033[01;32m\]\u@documentdb-lab\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+# Aliases úteis
+alias ll='ls -lah'
+alias labs='cd ~/documentdb-labs'
+alias awsid='aws sts get-caller-identity'
+
+# Mostrar boas-vindas no primeiro login
+if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then
+    cat ~/BEM-VINDO.txt
+    touch ~/.welcome_shown
+fi
+
+echo ""
+echo "💡 Digite 'cat ~/BEM-VINDO.txt' para ver as informações do ambiente"
+echo ""
+BASHRC
+            
+            chown ${PrefixoAluno}02:${PrefixoAluno}02 /home/${PrefixoAluno}02/.bashrc
+            
+            # Ajustar permissões
             chown -R ${PrefixoAluno}02:${PrefixoAluno}02 /home/${PrefixoAluno}02/
+            
+            # Marcar setup como completo
             echo "Setup completo em $(date)" > /home/${PrefixoAluno}02/setup-complete.txt
             chown ${PrefixoAluno}02:${PrefixoAluno}02 /home/${PrefixoAluno}02/setup-complete.txt
           - AccessKey: !Ref Aluno02AccessKey
@@ -429,26 +556,23 @@ Outputs:
     Value: !Ref LabsBucket
 
   Aluno01Info:
-    Condition: CreateAluno01
     Description: 'IP e credenciais do Aluno 01'
     Value: !Sub |
       IP: ${Aluno01Instance.PublicIp}
       User: ${Aluno01User}
-      Key: ${Aluno01KeyPair}
+      SSH: ssh -i ${KeyPairName}.pem ec2-user@${Aluno01Instance.PublicIp}
 
   Aluno02Info:
-    Condition: CreateAluno02
     Description: 'IP e credenciais do Aluno 02'
     Value: !Sub |
       IP: ${Aluno02Instance.PublicIp}
       User: ${Aluno02User}
-      Key: ${Aluno02KeyPair}
+      SSH: ssh -i ${KeyPairName}.pem ec2-user@${Aluno02Instance.PublicIp}
 
   InstrucoesConexao:
-    Description: 'Como conectar às instâncias'
+    Description: 'Como conectar as instancias'
     Value: !Sub |
-      1. Baixe as chaves SSH do console EC2
-      2. chmod 400 chave.pem
-      3. ssh -i chave.pem ec2-user@IP-PUBLICO
-      4. sudo su - ${PrefixoAluno}XX
+      Chave SSH: ${KeyPairName}.pem
+      Comando: ssh -i ${KeyPairName}.pem ec2-user@IP-PUBLICO
+      Depois: sudo su - ${PrefixoAluno}XX
       AWS CLI já configurado!

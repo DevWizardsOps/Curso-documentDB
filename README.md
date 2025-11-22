@@ -97,21 +97,74 @@ ls -la ~/global-bundle.pem
 ## 📋 Roteiro de Estudo
 
 ### Iniciante (Primeira vez com DocumentDB)
+**Duração total: 16h**
+
 1. **Módulo 1** - Conceitos fundamentais (4h)
+   - Introdução ao DocumentDB
+   - Console AWS
+   - CLI e SDKs básicos
+
 2. **Módulo 2** - Administração básica (6h)
+   - Provisionamento via Console
+   - Backup e snapshots
+   - Monitoramento básico
+
 3. **Módulo 3** - Segurança essencial (6h)
+   - Autenticação nativa
+   - VPC e Security Groups
+   - Auditoria com CloudTrail
 
 ### Intermediário (Experiência com MongoDB)
+**Duração total: 15.5h**
+
 1. **Módulo 1** - Revisão rápida (2h)
+   - Diferenças MongoDB vs DocumentDB
+   - Console e CLI
+
 2. **Módulo 2** - Administração completa (6h)
-3. **Módulo 4** - Performance e tuning (6h)
-4. **Módulo 5** - Alta disponibilidade (6h)
+   - Provisionamento com Terraform
+   - Failover e alta disponibilidade
+   - Monitoramento avançado
+
+3. **Módulo 4** - Performance e tuning (3h)
+   - Métricas customizadas
+   - Análise de planos de execução
+   - Otimização de índices
+
+4. **Módulo 5** - Backup e exportação (1.5h)
+   - Backup para S3
+   - Políticas de retenção
+   - Restore e validação
+
+5. **Módulo 3** - Segurança (3h - opcional)
+   - Aprofundamento em compliance
 
 ### Avançado (Arquitetos/DevOps)
+**Duração total: 15h**
+
 1. **Módulo 2** - Provisionamento com Terraform (3h)
+   - Infraestrutura como código
+   - Automação completa
+   - Ambientes reproduzíveis
+
 2. **Módulo 3** - Segurança e compliance (6h)
-3. **Módulo 4** - Performance avançada (6h)
-4. **Módulo 5** - Arquiteturas multi-região (6h)
+   - Autenticação avançada
+   - Auditoria completa
+   - Compliance e governança
+
+3. **Módulo 4** - Performance avançada (3h)
+   - Análise profunda de métricas
+   - Otimização de queries complexas
+   - Troubleshooting de performance
+
+4. **Módulo 5** - Backup e disaster recovery (1.5h)
+   - Estratégias de backup
+   - Automação de backups
+   - Testes de restore
+
+5. **Módulo 2** - Monitoramento e automação (1.5h - revisão)
+   - EventBridge e automação
+   - Dashboards customizados
 
 ## 🛠️ Ferramentas Utilizadas
 

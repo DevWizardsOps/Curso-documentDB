@@ -1,239 +1,277 @@
-# 🔧 Preparação do Ambiente - APENAS INSTRUTORES
+# Preparação do Ambiente - Curso DocumentDB
 
-> ⚠️ **ATENÇÃO:** Este diretório contém scripts de preparação do ambiente AWS e deve ser usado APENAS por instrutores. Os alunos não precisam acessar estes arquivos.
+Este diretório contém scripts para preparar o ambiente AWS para o curso de DocumentDB.
 
-## 📋 Arquivos Neste Diretório
+## 🎯 O que é criado
 
-### Scripts Principais
-- **`deploy-curso.sh`** - Deploy automático do ambiente completo
-- **`manage-curso.sh`** - Gerenciamento de recursos criados
-- **`test-ambiente.sh`** - Validação do ambiente
+Para cada aluno, o script cria:
+- ✅ Instância EC2 (t3.micro) com Amazon Linux 2
+- ✅ Usuário IAM com permissões para DocumentDB
+- ✅ Access Keys configuradas automaticamente na instância
+- ✅ Ambiente pré-configurado (MongoDB Shell, Node.js, Python, Terraform)
+- ✅ Security Groups para EC2 e DocumentDB
 
-### Templates CloudFormation
-- **`setup-curso-documentdb-simple.yaml`** - Template principal otimizado
+Recursos compartilhados:
+- ✅ Security Group para DocumentDB
+- ✅ Bucket S3 para laboratórios
+- ✅ IAM Group com políticas do curso
 
-### Documentação
-- **`README-AMBIENTE.md`** - Documentação completa do ambiente
-- **`RESUMO-SCRIPTS.md`** - Guia rápido de uso
+## 📋 Pré-requisitos
 
-## 🚀 Quick Start para Instrutores
+1. **AWS CLI instalado e configurado**
+   ```bash
+   aws configure
+   ```
 
-### 1. Pré-requisitos
+2. **Permissões necessárias**:
+   - Criar instâncias EC2
+   - Criar usuários e grupos IAM
+   - Criar Security Groups
+   - Criar buckets S3
+   - Criar/importar Key Pairs
+
+3. **VPC com subnet pública** (pode usar a VPC padrão)
+
+## 🚀 Como usar
+
+Existem duas formas de criar o ambiente:
+
+### Opção 1: Teste Rápido (2 alunos fixos) ⚡
+
+**Ideal para**: Testes rápidos, validação do ambiente, POC
+
+Use o template estático `setup-curso-documentdb-simple.yaml` que cria exatamente 2 alunos:
+
 ```bash
-# Verificar AWS CLI
-aws --version
-aws sts get-caller-identity
+cd preparacao-curso
 
-# Verificar permissões necessárias:
-# - CloudFormationFullAccess
-# - EC2FullAccess  
-# - IAMFullAccess
-# - S3FullAccess
+# Criar chave SSH
+KEY_NAME="curso-documentdb-key"
+ssh-keygen -t rsa -b 2048 -f "$KEY_NAME.pem" -N "" -C "Curso DocumentDB"
+aws ec2 import-key-pair --key-name $KEY_NAME --public-key-material fileb://${KEY_NAME}.pem.pub
+chmod 400 ${KEY_NAME}.pem
+rm ${KEY_NAME}.pem.pub
+
+# Deploy direto
+aws cloudformation create-stack \
+  --stack-name curso-documentdb \
+  --template-body file://setup-curso-documentdb-simple.yaml \
+  --parameters \
+      ParameterKey=PrefixoAluno,ParameterValue=aluno \
+      ParameterKey=VpcId,ParameterValue=vpc-xxxxx \
+      ParameterKey=SubnetId,ParameterValue=subnet-xxxxx \
+      ParameterKey=AllowedCIDR,ParameterValue=0.0.0.0/0 \
+      ParameterKey=KeyPairName,ParameterValue=$KEY_NAME \
+  --capabilities CAPABILITY_NAMED_IAM
 ```
 
-### 2. Deploy do Ambiente
+**Vantagens**:
+- ✅ Deploy rápido e simples
+- ✅ Não precisa de scripts auxiliares
+- ✅ Template fixo e fácil de revisar
+- ✅ Ideal para testes e validação
+
+**Limitações**:
+- ⚠️ Sempre cria exatamente 2 alunos
+- ⚠️ Para mais alunos, use a Opção 2
+
+### Opção 2: Ambiente Completo (1-20 alunos) 🎓
+
+**Ideal para**: Cursos reais, múltiplos alunos, produção
+
+Use o script `deploy-curso.sh` que gera o template dinamicamente:
+
 ```bash
-cd preparacao-curso/
+cd preparacao-curso
 ./deploy-curso.sh
 ```
 
-O script irá perguntar:
-- Número de alunos (1-10)
-- Prefixo para nomes (ex: "aluno")
-- Configurações de rede
-- Restrições de SSH
+O script perguntará:
+- Número de alunos (1-20)
+- Prefixo para nomes dos alunos (padrão: "aluno")
+- Nome da stack CloudFormation (padrão: "curso-documentdb")
+- CIDR permitido para SSH (recomendado: seu IP atual)
 
-### 3. Validar Ambiente
+O script irá:
+1. Gerar o template CloudFormation dinamicamente via `gerar-template.sh`
+2. Criar/importar a chave SSH automaticamente
+3. Criar a stack no CloudFormation
+4. Aguardar a conclusão (pode levar 5-10 minutos)
+5. Exibir as informações de acesso
+
+**Vantagens**:
+- ✅ Suporta de 1 a 20 alunos
+- ✅ Totalmente automatizado
+- ✅ Gerenciamento de chaves SSH integrado
+- ✅ Validações e verificações automáticas
+
+## 📊 Comparação das Opções
+
+| Característica | Teste Rápido | Ambiente Completo |
+|----------------|--------------|-------------------|
+| Número de alunos | 2 (fixo) | 1-20 (configurável) |
+| Complexidade | Baixa | Média |
+| Automação | Manual | Automática |
+| Tempo de setup | ~2 min | ~5 min |
+| Uso recomendado | Testes/POC | Cursos reais |
+| Template | Estático | Gerado dinamicamente |
+
+## 🔑 Chave SSH
+
+### Como funciona
+
+O script cria uma chave SSH localmente e faz upload da chave pública para a AWS:
+
+- **Arquivo criado**: `<nome-da-stack>-key.pem`
+- **Localização**: Diretório atual
+- **Uso**: Mesma chave para todas as instâncias
+
+### ⚠️ IMPORTANTE
+
+- A chave privada (.pem) fica apenas no seu computador
+- Faça backup do arquivo .pem
+- Distribua o arquivo .pem para os alunos
+- Se perder o arquivo, não conseguirá mais acessar as instâncias via SSH
+
+Veja mais detalhes em: [INSTRUCOES-SSH.md](./INSTRUCOES-SSH.md)
+
+## 📊 Arquitetura
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    AWS Account                          │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  VPC                                             │  │
+│  │                                                  │  │
+│  │  ┌────────────┐  ┌────────────┐  ┌───────────┐ │  │
+│  │  │ EC2 Aluno1 │  │ EC2 Aluno2 │  │    ...    │ │  │
+│  │  │            │  │            │  │           │ │  │
+│  │  │ - mongosh  │  │ - mongosh  │  │           │ │  │
+│  │  │ - Node.js  │  │ - Node.js  │  │           │ │  │
+│  │  │ - Python   │  │ - Python   │  │           │ │  │
+│  │  │ - AWS CLI  │  │ - AWS CLI  │  │           │ │  │
+│  │  └────────────┘  └────────────┘  └───────────┘ │  │
+│  │         │               │              │        │  │
+│  │         └───────────────┴──────────────┘        │  │
+│  │                         │                       │  │
+│  │                  ┌──────▼──────┐               │  │
+│  │                  │ DocumentDB  │               │  │
+│  │                  │   Cluster   │               │  │
+│  │                  └─────────────┘               │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  IAM                                             │  │
+│  │                                                  │  │
+│  │  ┌─────────────────────────────────────────┐    │  │
+│  │  │  Group: curso-documentdb-students       │    │  │
+│  │  │  - DocumentDB Full Access               │    │  │
+│  │  │  - EC2 Describe/SG Management           │    │  │
+│  │  │  - CloudWatch Logs/Metrics              │    │  │
+│  │  │  - S3 Access (curso buckets)            │    │  │
+│  │  └─────────────────────────────────────────┘    │  │
+│  │           │                                      │  │
+│  │  ┌────────┴────────┬──────────┬─────────┐       │  │
+│  │  │                 │          │         │       │  │
+│  │  │  User: aluno01  │ aluno02  │   ...   │       │  │
+│  │  │  (Access Keys)  │          │         │       │  │
+│  │  └─────────────────┴──────────┴─────────┘       │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  S3: curso-documentdb-labs-<account-id>          │  │
+│  └──────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 📁 Arquivos
+
+### Scripts principais
+- `deploy-curso.sh` - Script automatizado para deploy completo (Opção 2)
+- `gerar-template.sh` - Gera template CloudFormation dinamicamente para N alunos
+
+### Templates CloudFormation
+- `setup-curso-documentdb-simple.yaml` - Template estático para 2 alunos (Opção 1 - Teste Rápido)
+- `setup-curso-documentdb-dynamic.yaml` - Template gerado dinamicamente (criado pelo gerar-template.sh)
+
+### Documentação e utilitários
+- `INSTRUCOES-SSH.md` - Instruções detalhadas sobre chaves SSH
+- `conectar-aluno.sh` - Script auxiliar para conectar às instâncias
+- `README.md` - Este arquivo
+
+## 🔧 Solução de Problemas
+
+### Erro: InsufficientCapabilitiesException
+
+**Solução**: O script já usa `--capabilities CAPABILITY_NAMED_IAM`
+
+### Erro: Parameters: [KeyPairName] must have values
+
+**Causa**: A chave SSH não foi criada corretamente
+
+**Solução**: 
+1. Verifique se o arquivo .pem foi criado
+2. Execute o script novamente
+3. Se a chave já existe na AWS, certifique-se de ter o arquivo .pem local
+
+### Stack falhou (ROLLBACK_COMPLETE)
+
+**Solução**: Verifique os eventos da stack:
 ```bash
-./test-ambiente.sh
+aws cloudformation describe-stack-events \
+  --stack-name curso-documentdb \
+  --query 'StackEvents[?ResourceStatus==`CREATE_FAILED`]'
 ```
 
-### 4. Gerenciar Durante o Curso
+### Não consigo conectar via SSH
+
+Veja: [INSTRUCOES-SSH.md](./INSTRUCOES-SSH.md)
+
+## 🧹 Limpeza
+
+Para deletar todo o ambiente após o curso:
+
 ```bash
-./manage-curso.sh
+# Deletar a stack (deleta EC2, IAM users, S3, etc.)
+aws cloudformation delete-stack --stack-name curso-documentdb
+
+# Aguardar conclusão
+aws cloudformation wait stack-delete-complete --stack-name curso-documentdb
+
+# Deletar a chave SSH da AWS
+aws ec2 delete-key-pair --key-name curso-documentdb-key
+
+# Deletar arquivo local da chave
+rm curso-documentdb-key.pem
+
+# Deletar template gerado
+rm setup-curso-documentdb-dynamic.yaml
 ```
 
-Opções disponíveis:
-1. Listar stacks do curso
-2. Mostrar informações detalhadas
-3. Conectar a instâncias dos alunos
-4. Parar/iniciar instâncias (economia)
-5. Relatório de custos
-6. Deletar ambiente completo
+## 💰 Custos Estimados
 
-## 💰 Gestão de Custos
+Para 10 alunos durante 8 horas:
 
-### Por Aluno (estimativa mensal)
-- **t3.micro**: $8.50 (Free Tier: $0)
-- **EBS 8GB**: $0.80 (Free Tier: $0)  
-- **IP Público**: $3.65
-- **Total**: ~$13/mês (Free Tier: ~$4/mês)
+- **EC2** (10x t3.micro): ~$0.80
+- **DocumentDB** (1x db.t3.medium): ~$1.60
+- **S3**: < $0.01
+- **Data Transfer**: < $0.10
 
-### Economia Durante o Curso
-```bash
-# Parar todas as instâncias (economia de ~70%)
-./manage-curso.sh
-# Escolher opção 4 (Parar instâncias)
+**Total estimado**: ~$2.50 por dia de curso
 
-# Iniciar quando necessário
-./manage-curso.sh  
-# Escolher opção 5 (Iniciar instâncias)
-```
+## 📚 Próximos Passos
 
-## 🎓 Informações para Distribuir aos Alunos
+Após a criação do ambiente:
 
-Após o deploy, forneça para cada aluno:
+1. Distribua o arquivo .pem para os alunos
+2. Forneça os IPs das instâncias (exibidos no final do script)
+3. Instrua os alunos a conectarem via SSH
+4. Os alunos podem começar os laboratórios imediatamente
 
-### Dados de Acesso
-- **IP Público**: Obtido nos outputs da stack
-- **Usuário SSH**: `ec2-user`
-- **Usuário do Curso**: `alunoXX` (onde XX é o número)
-- **Chave SSH**: Nome da chave para download no console EC2
+## 🤝 Suporte
 
-### Instruções de Conexão
-```bash
-# 1. Baixar chave SSH do console EC2
-# 2. Configurar permissões
-chmod 400 nome-da-chave.pem
-
-# 3. Conectar via SSH  
-ssh -i nome-da-chave.pem ec2-user@IP-PUBLICO
-
-# 4. Mudar para usuário do curso
-sudo su - alunoXX
-```
-
-### Verificação do Ambiente
-```bash
-# AWS CLI deve estar configurado
-aws sts get-caller-identity
-
-# Ferramentas disponíveis
-mongosh --version
-node --version  
-python3 --version
-terraform --version
-
-# Certificado DocumentDB
-ls -la ~/global-bundle.pem
-```
-
-## 🛡️ Segurança Implementada
-
-### Permissões IAM dos Alunos
-✅ **Permitido:**
-- DocumentDB: Acesso completo
-- CloudWatch: Métricas e logs
-- EC2: Consultas e Security Groups (limitado)
-- S3: Buckets do curso apenas
-- EventBridge: Regras básicas
-- Lambda: Funções básicas
-
-❌ **Negado:**
-- CloudFormation (não precisam)
-- IAM: Criação de usuários/roles
-- EC2: Criação de instâncias
-- Serviços não relacionados ao curso
-
-### Isolamento de Rede
-- Security Groups restritivos
-- DocumentDB apenas em VPC privada
-- SSH apenas de IPs permitidos
-- Usuários separados por aluno
-
-## 🔧 Personalização
-
-### Modificar Número de Alunos
-Editar `setup-curso-documentdb-simple.yaml`:
-```yaml
-Parameters:
-  NumeroAlunos:
-    Default: 5  # Alterar aqui
-    MaxValue: 10  # Aumentar se necessário
-```
-
-### Adicionar Ferramentas
-Editar seção `UserData`:
-```bash
-# Adicionar nova ferramenta
-yum install -y nova-ferramenta
-```
-
-### Modificar Permissões
-Editar política IAM no template:
-```yaml
-- Effect: Allow
-  Action:
-    - 'novo-servico:*'
-  Resource: '*'
-```
-
-## 🆘 Troubleshooting
-
-### Stack Creation Failed
-```bash
-aws cloudformation describe-stack-events --stack-name NOME-STACK
-```
-
-### Aluno Não Consegue Conectar
-```bash
-# Verificar instância
-aws ec2 describe-instances --instance-ids i-XXXXXXX
-
-# Verificar security group  
-aws ec2 describe-security-groups --group-ids sg-XXXXXXX
-
-# Testar conectividade
-telnet IP-PUBLICO 22
-```
-
-### AWS CLI Não Configurado
-```bash
-# Conectar à instância e verificar
-ssh -i chave.pem ec2-user@IP
-sudo su - alunoXX
-aws configure list
-
-# Reconfigurar se necessário
-aws configure
-```
-
-## 📞 Suporte
-
-### Logs Úteis
-```bash
-# CloudFormation events
-aws cloudformation describe-stack-events --stack-name STACK-NAME
-
-# EC2 console output
-aws ec2 get-console-output --instance-id i-XXXXXXX
-
-# Instance user data logs
-ssh -i key.pem ec2-user@IP
-sudo tail -f /var/log/cloud-init-output.log
-```
-
-### Comandos de Diagnóstico
-```bash
-# Listar recursos do curso
-aws resourcegroupstaggingapi get-resources \
-  --tag-filters Key=Purpose,Values="Curso DocumentDB"
-
-# Verificar custos
-aws ce get-cost-and-usage \
-  --time-period Start=2024-01-01,End=2024-01-31 \
-  --granularity MONTHLY \
-  --metrics BlendedCost
-```
-
----
-
-## ⚠️ IMPORTANTE
-
-- **Sempre teste** o ambiente antes do curso
-- **Monitore custos** durante o curso  
-- **Delete recursos** ao final para evitar cobranças
-- **Mantenha backups** das configurações importantes
-- **Documente** qualquer customização feita
-
-**Este ambiente foi projetado para ser seguro, econômico e fácil de usar. Boa sorte com o curso! 🎓**
+Para problemas ou dúvidas:
+1. Verifique os logs do CloudFormation
+2. Consulte [INSTRUCOES-SSH.md](./INSTRUCOES-SSH.md)
+3. Revise os eventos da stack no console AWS

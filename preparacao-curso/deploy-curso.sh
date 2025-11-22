@@ -37,7 +37,7 @@ cat << "EOF"
 ║                    CURSO DOCUMENTDB                          ║
 ║              Setup de Ambiente AWS                           ║
 ║                                                              ║
-║  Este script criará instâncias EC2 e usuários IAM           ║
+║  Este script criará instâncias EC2 e usuários IAM            ║
 ║  para cada aluno do curso                                    ║
 ╚══════════════════════════════════════════════════════════════╝
 EOF
@@ -143,6 +143,67 @@ fi
 
 warning "CIDR permitido para SSH: $ALLOWED_CIDR"
 
+# Configurar chave SSH
+echo ""
+echo -e "${YELLOW}Configuração da Chave SSH:${NC}"
+KEY_NAME="${STACK_NAME}-key"
+KEY_FILE="${KEY_NAME}.pem"
+
+# Verificar se a chave já existe na AWS
+if aws ec2 describe-key-pairs --key-names $KEY_NAME &> /dev/null; then
+    warning "Chave SSH '$KEY_NAME' já existe na AWS"
+    
+    # Verificar se o arquivo local existe
+    if [ -f "$KEY_FILE" ]; then
+        success "Arquivo local da chave encontrado: $KEY_FILE"
+        read -p "Usar chave existente? (Y/n): " USE_EXISTING
+        if [[ $USE_EXISTING =~ ^[Nn]$ ]]; then
+            error "Operação cancelada. Delete a chave na AWS primeiro ou use outro nome de stack."
+            exit 1
+        fi
+    else
+        error "Chave existe na AWS mas arquivo local não encontrado!"
+        echo "Você tem duas opções:"
+        echo "1. Se você tem o arquivo .pem, coloque-o neste diretório como: $KEY_FILE"
+        echo "2. Delete a chave na AWS e execute o script novamente"
+        echo ""
+        echo "Para deletar: aws ec2 delete-key-pair --key-name $KEY_NAME"
+        exit 1
+    fi
+else
+    log "Criando nova chave SSH..."
+    
+    # Criar chave SSH localmente
+    ssh-keygen -t rsa -b 2048 -f "$KEY_FILE" -N "" -C "Curso DocumentDB - $STACK_NAME" &> /dev/null
+    
+    if [ $? -eq 0 ]; then
+        success "Chave SSH criada localmente: $KEY_FILE"
+        
+        # Fazer upload da chave pública para AWS
+        log "Fazendo upload da chave pública para AWS..."
+        aws ec2 import-key-pair \
+            --key-name $KEY_NAME \
+            --public-key-material fileb://${KEY_FILE}.pub
+        
+        if [ $? -eq 0 ]; then
+            success "Chave SSH importada para AWS: $KEY_NAME"
+            
+            # Ajustar permissões
+            chmod 400 $KEY_FILE
+            success "Permissões ajustadas: chmod 400 $KEY_FILE"
+            
+            # Remover chave pública (não é mais necessária)
+            rm -f ${KEY_FILE}.pub
+        else
+            error "Falha ao importar chave para AWS"
+            exit 1
+        fi
+    else
+        error "Falha ao criar chave SSH"
+        exit 1
+    fi
+fi
+
 # Confirmação final
 echo ""
 echo -e "${YELLOW}Resumo da Configuração:${NC}"
@@ -152,6 +213,7 @@ echo "Prefixo: $PREFIXO_ALUNO"
 echo "VPC: $VPC_ID"
 echo "Subnet: $SUBNET_ID"
 echo "SSH CIDR: $ALLOWED_CIDR"
+echo "Chave SSH: $KEY_NAME (arquivo: $KEY_FILE)"
 echo "Ação: $ACTION"
 
 echo ""
@@ -161,18 +223,44 @@ if [[ ! $CONFIRM =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
+# Gerar template dinamicamente
+log "Gerando template CloudFormation para $NUM_ALUNOS alunos..."
+bash gerar-template.sh $NUM_ALUNOS
+
+if [ $? -ne 0 ]; then
+    error "Falha ao gerar template"
+    exit 1
+fi
+
+success "Template gerado com sucesso"
+
 # Deploy da stack
 log "Iniciando deploy da stack CloudFormation..."
 
+# Debug: verificar se todas as variáveis estão definidas
+if [ -z "$KEY_NAME" ]; then
+    error "KEY_NAME não está definido!"
+    exit 1
+fi
+
+log "Parâmetros do CloudFormation:"
+log "  NumeroAlunos: $NUM_ALUNOS"
+log "  PrefixoAluno: $PREFIXO_ALUNO"
+log "  VpcId: $VPC_ID"
+log "  SubnetId: $SUBNET_ID"
+log "  AllowedCIDR: $ALLOWED_CIDR"
+log "  KeyPairName: $KEY_NAME"
+
 aws cloudformation $ACTION \
-    --stack-name $STACK_NAME \
-    --template-body file://setup-curso-documentdb-simple.yaml \
+    --stack-name "$STACK_NAME" \
+    --template-body file://setup-curso-documentdb-dynamic.yaml \
     --parameters \
-        ParameterKey=NumeroAlunos,ParameterValue=$NUM_ALUNOS \
-        ParameterKey=PrefixoAluno,ParameterValue=$PREFIXO_ALUNO \
-        ParameterKey=VpcId,ParameterValue=$VPC_ID \
-        ParameterKey=SubnetId,ParameterValue=$SUBNET_ID \
-        ParameterKey=AllowedCIDR,ParameterValue=$ALLOWED_CIDR \
+        ParameterKey=NumeroAlunos,ParameterValue="$NUM_ALUNOS" \
+        ParameterKey=PrefixoAluno,ParameterValue="$PREFIXO_ALUNO" \
+        ParameterKey=VpcId,ParameterValue="$VPC_ID" \
+        ParameterKey=SubnetId,ParameterValue="$SUBNET_ID" \
+        ParameterKey=AllowedCIDR,ParameterValue="$ALLOWED_CIDR" \
+        ParameterKey=KeyPairName,ParameterValue="$KEY_NAME" \
     --capabilities CAPABILITY_NAMED_IAM \
     --tags \
         Key=Purpose,Value="Curso DocumentDB" \
@@ -216,11 +304,19 @@ if [ $? -eq 0 ]; then
         done
         
         echo -e "${YELLOW}📋 Próximos Passos:${NC}"
-        echo "1. Baixe as chaves SSH do console EC2 > Key Pairs"
-        echo "2. Configure permissões: chmod 400 nome-da-chave.pem"
-        echo "3. Conecte via SSH: ssh -i chave.pem ec2-user@IP-PUBLICO"
-        echo "4. Mude para o usuário do aluno: sudo su - ${PREFIXO_ALUNO}XX"
-        echo "5. As credenciais AWS já estão configuradas!"
+        echo ""
+        echo -e "${GREEN}🔑 Chave SSH:${NC}"
+        echo "  Arquivo: $(pwd)/$KEY_FILE"
+        echo "  IMPORTANTE: Guarde este arquivo em local seguro!"
+        echo ""
+        echo -e "${GREEN}🔌 Para conectar às instâncias:${NC}"
+        echo "  ssh -i $KEY_FILE ec2-user@IP-PUBLICO"
+        echo ""
+        echo -e "${GREEN}👤 Depois de conectar:${NC}"
+        echo "  sudo su - ${PREFIXO_ALUNO}XX"
+        echo "  (As credenciais AWS já estão configuradas!)"
+        echo ""
+        echo -e "${YELLOW}💡 Dica:${NC} Distribua o arquivo $KEY_FILE para os alunos"
         echo ""
         echo -e "${GREEN}✨ Ambiente pronto para o curso! ✨${NC}"
         
