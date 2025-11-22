@@ -406,23 +406,25 @@ if [ $? -eq 0 ]; then
         echo "  Usuários: ${STACK_NAME}-${PREFIXO_ALUNO}01, ${STACK_NAME}-${PREFIXO_ALUNO}02"
         echo "  Senha padrão: Extractta@2026"
         echo ""
-        echo -e "${GREEN}🔑 CHAVE SSH:${NC}"
-        echo "  📁 Arquivo Local: $(pwd)/$KEY_FILE"
-        echo "  ⚠️  IMPORTANTE: Guarde este arquivo em local seguro!"
-        echo ""
-        
         # Mostrar informações do S3 se disponível
         if [ -f ".ssh-key-info" ]; then
             source .ssh-key-info
-            echo -e "${GREEN}☁️  CHAVE NO S3 (Para Distribuição):${NC}"
+            echo -e "${GREEN}🔑 CHAVE SSH:${NC}"
+            echo "  📁 Arquivo Local: $(pwd)/$KEY_FILE"
+            echo "  ⚠️  IMPORTANTE: Guarde este arquivo em local seguro!"
+            echo ""
+            echo -e "${GREEN}☁️  CHAVE NO S3 (Para Distribuição aos Alunos):${NC}"
             echo "  📦 Bucket: ${S3_BUCKET}"
             echo "  📂 Caminho: ${S3_KEY_PATH}"
             echo ""
             echo -e "${BLUE}🔗 Link para Download (Console AWS):${NC}"
             echo "  ${S3_CONSOLE_URL}"
             echo ""
-            echo -e "${YELLOW}📋 Instruções para os Alunos:${NC}"
-            echo "  1. Acesse o link acima (precisa estar logado no Console AWS)"
+            echo -e "${YELLOW}📖 Manual Completo de Download:${NC}"
+            echo "  https://github.com/DevWizardsOps/Curso-documentDB/blob/main/apoio-alunos/01-download-chave-ssh.md"
+            echo ""
+            echo -e "${YELLOW}📋 Instruções Rápidas para os Alunos:${NC}"
+            echo "  1. Acesse o link do S3 acima (precisa estar logado no Console AWS)"
             echo "  2. Clique em 'Download' ou 'Baixar'"
             echo "  3. Salve como: ${KEY_FILE}"
             echo "  4. Execute: chmod 400 ${KEY_FILE}"
@@ -430,6 +432,14 @@ if [ $? -eq 0 ]; then
             echo -e "${YELLOW}📋 Ou via AWS CLI:${NC}"
             echo "  aws s3 cp s3://${S3_BUCKET}/${S3_KEY_PATH} ${KEY_FILE}"
             echo "  chmod 400 ${KEY_FILE}"
+            echo ""
+        else
+            echo -e "${GREEN}🔑 CHAVE SSH:${NC}"
+            echo "  📁 Arquivo Local: $(pwd)/$KEY_FILE"
+            echo "  ⚠️  IMPORTANTE: Guarde este arquivo em local seguro!"
+            echo ""
+            echo -e "${YELLOW}📖 Manual de Download:${NC}"
+            echo "  https://github.com/DevWizardsOps/Curso-documentDB/blob/main/apoio-alunos/01-download-chave-ssh.md"
             echo ""
         fi
         
