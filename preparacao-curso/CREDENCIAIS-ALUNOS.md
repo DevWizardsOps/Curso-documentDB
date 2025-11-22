@@ -7,34 +7,18 @@
 https://[ACCOUNT-ID].signin.aws.amazon.com/console
 ```
 
-### Credenciais do Treinamento
+### Credenciais Padrão
 
-| Aluno | Nome de Usuário IAM | Senha |
-|-------|---------------------|-------|
-| Aluno 01 | `[stack-name]-aluno01` | Ver abaixo |
-| Aluno 02 | `[stack-name]-aluno02` | Ver abaixo |
-
-### �O Como Obter a Senha
-
-A senha está armazenada de forma segura no AWS Secrets Manager.
-
-**Opção 1 - Via AWS CLI:**
-```bash
-aws secretsmanager get-secret-value \
-  --secret-id [stack-name]-console-password \
-  --query SecretString --output text | jq -r .password
-```
-
-**Opção 2 - Via Console AWS (com credenciais de administrador):**
-1. Acesse o serviço Secrets Manager
-2. Procure por `[stack-name]-console-password`
-3. Clique em "Retrieve secret value"
-4. A senha estará no campo `password`
+| Aluno | Nome de Usuário IAM | Senha Padrão |
+|-------|---------------------|--------------|
+| Aluno 01 | `[stack-name]-aluno01` | `Extractta@2026` |
+| Aluno 02 | `[stack-name]-aluno02` | `Extractta@2026` |
 
 **⚠️ IMPORTANTE:**
-- Você será solicitado a trocar a senha no primeiro login
-- Escolha uma senha forte com pelo menos 8 caracteres
-- Não compartilhe sua nova senha com outros alunos
+- A senha é a mesma para todos os alunos: **`Extractta@2026`**
+- **NÃO** é necessário trocar a senha no primeiro login
+- Mantenha a senha em local seguro durante o curso
+- Todos os alunos usam a mesma senha para facilitar o treinamento
 
 ## 🔑 Acesso SSH às Instâncias EC2
 
@@ -112,7 +96,7 @@ Seu usuário tem permissões para:
 - Verifique se está usando o nome de usuário completo: `[stack-name]-alunoXX`
 - Certifique-se de estar na URL correta com o Account ID
 - A senha padrão é: `Extractta@2026`
-- Você será solicitado a trocar a senha no primeiro login
+- Não é necessário trocar a senha
 
 ### Erro "Permission denied" no SSH
 ```bash
@@ -128,9 +112,10 @@ aws configure list
 # Se necessário, o instrutor pode fornecer novas credenciais
 ```
 
-### Esqueci minha nova senha do console
-- A senha padrão inicial é: `Extractta@2026`
-- Se você já trocou a senha e esqueceu, entre em contato com o instrutor para reset
+### Esqueci a senha do console
+- A senha padrão é: `Extractta@2026`
+- Esta senha não muda durante o curso
+- Se ainda assim não conseguir acessar, entre em contato com o instrutor
 
 ## 📞 Suporte
 

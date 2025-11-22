@@ -364,7 +364,7 @@ if [ $? -eq 0 ]; then
         echo -e "${GREEN}🌐 ACESSO AO CONSOLE AWS:${NC}"
         echo "  URL: https://${ACCOUNT_ID}.signin.aws.amazon.com/console"
         echo "  Usuários: ${STACK_NAME}-${PREFIXO_ALUNO}01, ${STACK_NAME}-${PREFIXO_ALUNO}02"
-        echo "  Senha: Extractta@2025"
+        echo "  Senha padrão: Extractta@2026"
         echo ""
         echo -e "${GREEN}🔑 Chave SSH:${NC}"
         echo "  Arquivo: $(pwd)/$KEY_FILE"
