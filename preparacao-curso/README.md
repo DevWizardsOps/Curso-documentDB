@@ -7,6 +7,7 @@ Este diretório contém scripts para preparar o ambiente AWS para o curso de Doc
 Para cada aluno, o script cria:
 - ✅ Instância EC2 (t3.micro) com Amazon Linux 2
 - ✅ Usuário IAM com permissões para DocumentDB
+- ✅ **Acesso ao Console AWS** (senha: `Extractta@2025`)
 - ✅ Access Keys configuradas automaticamente na instância
 - ✅ Ambiente pré-configurado (MongoDB Shell, Node.js, Python, Terraform)
 - ✅ Security Groups para EC2 e DocumentDB
@@ -197,6 +198,7 @@ Veja mais detalhes em: [INSTRUCOES-SSH.md](./INSTRUCOES-SSH.md)
 
 ### Documentação e utilitários
 - `INSTRUCOES-SSH.md` - Instruções detalhadas sobre chaves SSH
+- `CREDENCIAIS-ALUNOS.md` - Template de credenciais para distribuir aos alunos
 - `conectar-aluno.sh` - Script auxiliar para conectar às instâncias
 - `README.md` - Este arquivo
 

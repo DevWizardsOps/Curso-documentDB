@@ -143,6 +143,21 @@ fi
 
 warning "CIDR permitido para SSH: $ALLOWED_CIDR"
 
+# Configurar senha do console
+echo ""
+echo -e "${YELLOW}Configuração de Senha do Console:${NC}"
+read -p "Senha padrão para os alunos [Extractta@2026]: " CONSOLE_PASSWORD
+CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-Extractta@2026}
+
+# Validar senha (mínimo 8 caracteres)
+while [ ${#CONSOLE_PASSWORD} -lt 8 ]; do
+    error "Senha deve ter no mínimo 8 caracteres"
+    read -p "Senha padrão para os alunos [Extractta@2026]: " CONSOLE_PASSWORD
+    CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-Extractta@2026}
+done
+
+success "Senha configurada (será armazenada no Secrets Manager)"
+
 # Configurar chave SSH
 echo ""
 echo -e "${YELLOW}Configuração da Chave SSH:${NC}"
@@ -204,6 +219,44 @@ else
     fi
 fi
 
+# Criar/atualizar secret no Secrets Manager
+echo ""
+log "Configurando Secrets Manager..."
+SECRET_NAME="${STACK_NAME}-console-password"
+
+# Verificar se o secret já existe
+if aws secretsmanager describe-secret --secret-id $SECRET_NAME &> /dev/null; then
+    log "Secret já existe, atualizando..."
+    aws secretsmanager put-secret-value \
+        --secret-id $SECRET_NAME \
+        --secret-string "{\"password\":\"$CONSOLE_PASSWORD\"}"
+    
+    if [ $? -eq 0 ]; then
+        success "Secret atualizado: $SECRET_NAME"
+    else
+        error "Falha ao atualizar secret"
+        exit 1
+    fi
+else
+    log "Criando novo secret..."
+    aws secretsmanager create-secret \
+        --name $SECRET_NAME \
+        --description "Senha padrão do console para alunos do curso DocumentDB" \
+        --secret-string "{\"password\":\"$CONSOLE_PASSWORD\"}" \
+        --tags Key=Purpose,Value="Curso DocumentDB" Key=Stack,Value="$STACK_NAME"
+    
+    if [ $? -eq 0 ]; then
+        success "Secret criado: $SECRET_NAME"
+    else
+        error "Falha ao criar secret"
+        exit 1
+    fi
+fi
+
+# Obter ARN do secret
+SECRET_ARN=$(aws secretsmanager describe-secret --secret-id $SECRET_NAME --query 'ARN' --output text)
+success "Secret ARN: $SECRET_ARN"
+
 # Confirmação final
 echo ""
 echo -e "${YELLOW}Resumo da Configuração:${NC}"
@@ -214,6 +267,7 @@ echo "VPC: $VPC_ID"
 echo "Subnet: $SUBNET_ID"
 echo "SSH CIDR: $ALLOWED_CIDR"
 echo "Chave SSH: $KEY_NAME (arquivo: $KEY_FILE)"
+echo "Senha Console: ******** (armazenada em: $SECRET_NAME)"
 echo "Ação: $ACTION"
 
 echo ""
@@ -250,6 +304,7 @@ log "  VpcId: $VPC_ID"
 log "  SubnetId: $SUBNET_ID"
 log "  AllowedCIDR: $ALLOWED_CIDR"
 log "  KeyPairName: $KEY_NAME"
+log "  ConsolePasswordSecret: $SECRET_NAME"
 
 aws cloudformation $ACTION \
     --stack-name "$STACK_NAME" \
@@ -261,6 +316,7 @@ aws cloudformation $ACTION \
         ParameterKey=SubnetId,ParameterValue="$SUBNET_ID" \
         ParameterKey=AllowedCIDR,ParameterValue="$ALLOWED_CIDR" \
         ParameterKey=KeyPairName,ParameterValue="$KEY_NAME" \
+        ParameterKey=ConsolePasswordSecret,ParameterValue="$SECRET_NAME" \
     --capabilities CAPABILITY_NAMED_IAM \
     --tags \
         Key=Purpose,Value="Curso DocumentDB" \
@@ -305,18 +361,25 @@ if [ $? -eq 0 ]; then
         
         echo -e "${YELLOW}📋 Próximos Passos:${NC}"
         echo ""
+        echo -e "${GREEN}🌐 ACESSO AO CONSOLE AWS:${NC}"
+        echo "  URL: https://${ACCOUNT_ID}.signin.aws.amazon.com/console"
+        echo "  Usuários: ${STACK_NAME}-${PREFIXO_ALUNO}01, ${STACK_NAME}-${PREFIXO_ALUNO}02"
+        echo "  Senha: Extractta@2025"
+        echo ""
         echo -e "${GREEN}🔑 Chave SSH:${NC}"
         echo "  Arquivo: $(pwd)/$KEY_FILE"
         echo "  IMPORTANTE: Guarde este arquivo em local seguro!"
         echo ""
-        echo -e "${GREEN}🔌 Para conectar às instâncias:${NC}"
+        echo -e "${GREEN}🔌 Para conectar às instâncias via SSH:${NC}"
         echo "  ssh -i $KEY_FILE ec2-user@IP-PUBLICO"
         echo ""
         echo -e "${GREEN}👤 Depois de conectar:${NC}"
         echo "  sudo su - ${PREFIXO_ALUNO}XX"
         echo "  (As credenciais AWS já estão configuradas!)"
         echo ""
-        echo -e "${YELLOW}💡 Dica:${NC} Distribua o arquivo $KEY_FILE para os alunos"
+        echo -e "${YELLOW}💡 Dicas:${NC}"
+        echo "  • Distribua o arquivo $KEY_FILE para os alunos"
+        echo "  • Compartilhe a URL do console e a senha: Extractta@2025"
         echo ""
         echo -e "${GREEN}✨ Ambiente pronto para o curso! ✨${NC}"
         
