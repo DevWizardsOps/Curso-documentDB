@@ -43,6 +43,10 @@ Parameters:
   KeyPairName:
     Type: String
     Description: 'Nome da chave SSH existente (a mesma sera usada para todas as instancias)'
+    
+  ConsolePasswordSecret:
+    Type: String
+    Description: 'Nome do secret no Secrets Manager contendo a senha do console'
 
 Mappings:
   RegionMap:
@@ -218,6 +222,14 @@ for i in $(seq 1 $NUM_ALUNOS); do
     Properties:
       UserName: !Ref Aluno${ALUNO_NUM}User
 
+  Aluno${ALUNO_NUM}LoginProfile:
+    Condition: CreateAluno${ALUNO_NUM}
+    Type: AWS::IAM::LoginProfile
+    Properties:
+      UserName: !Ref Aluno${ALUNO_NUM}User
+      Password: !Sub '{{resolve:secretsmanager:\${ConsolePasswordSecret}:SecretString:password}}'
+      PasswordResetRequired: true
+
   Aluno${ALUNO_NUM}Instance:
     Condition: CreateAluno${ALUNO_NUM}
     Type: AWS::EC2::Instance
@@ -312,16 +324,31 @@ for i in $(seq 1 $NUM_ALUNOS); do
     Description: 'IP e credenciais do Aluno ${ALUNO_NUM}'
     Value: !Sub |
       IP: \${Aluno${ALUNO_NUM}Instance.PublicIp}
-      User: \${Aluno${ALUNO_NUM}User}
+      IAM User: \${Aluno${ALUNO_NUM}User}
+      Console Password: Armazenada no Secrets Manager (\${ConsolePasswordSecret})
       SSH: ssh -i \${KeyPairName}.pem ec2-user@\${Aluno${ALUNO_NUM}Instance.PublicIp}
 
 EOF_OUTPUT
 done
 
 cat >> setup-curso-documentdb-dynamic.yaml << 'EOF_FOOTER'
+  ConsolePasswordSecretName:
+    Description: 'Nome do secret contendo a senha do console'
+    Value: !Ref ConsolePasswordSecret
+    Export:
+      Name: !Sub '${AWS::StackName}-ConsolePassword-Secret'
+
   InstrucoesConexao:
     Description: 'Como conectar as instancias'
     Value: !Sub |
+      === ACESSO AO CONSOLE AWS ===
+      URL: https://${AWS::AccountId}.signin.aws.amazon.com/console
+      Senha: Armazenada no Secrets Manager
+      
+      Para recuperar a senha:
+      aws secretsmanager get-secret-value --secret-id ${ConsolePasswordSecret} --query SecretString --output text | jq -r .password
+      
+      === ACESSO SSH ===
       Chave SSH: ${KeyPairName}.pem
       Comando: ssh -i ${KeyPairName}.pem ec2-user@IP-PUBLICO
       Depois: sudo su - ${PrefixoAluno}XX
