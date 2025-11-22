@@ -387,81 +387,41 @@ for i in $(seq 1 $NUM_ALUNOS); do
               rm -fr /home/\${PrefixoAluno}${ALUNO_NUM}/Curso-documentDB/preparacao-curso
             sudo -u \${PrefixoAluno}${ALUNO_NUM} echo 'export ID=${PrefixoAluno}${ALUNO_NUM}' >> /home/${PrefixoAluno}${ALUNO_NUM}/.bashrc
             
-            # Criar arquivo de boas-vindas
-            cat > /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt <<'EOFWELCOME'
-╔══════════════════════════════════════════════════════════════╗
-║              BEM-VINDO AO CURSO DOCUMENTDB                   ║
-╚══════════════════════════════════════════════════════════════╝
-
-Olá \${PrefixoAluno}${ALUNO_NUM}!
-
-Seu ambiente está configurado e pronto para uso.
-
-📋 INFORMAÇÕES DO AMBIENTE:
-  - Usuário Linux: \${PrefixoAluno}${ALUNO_NUM}
-  - Usuário AWS IAM: \${AWS::StackName}-\${PrefixoAluno}${ALUNO_NUM}
-  - Região AWS: \${AWS::Region}
-  - Chave SSH: \${KeyPairName}
-
-🔧 FERRAMENTAS INSTALADAS:
-  ✓ AWS CLI (já configurado com suas credenciais)
-  ✓ MongoDB Shell (mongosh)
-  ✓ Node.js 18.x
-  ✓ Python 3 + pip
-  ✓ Terraform
-  ✓ Git
-
-📁 DIRETÓRIOS:
-  - Curso: ~/Curso-documentDB
-  - Certificado SSL: ~/global-bundle.pem
-
-🚀 PRIMEIROS PASSOS:
-  1. Teste o AWS CLI:
-     aws sts get-caller-identity
-
-  2. Liste recursos disponíveis:
-     aws docdb describe-db-clusters
-
-  3. Acesse o diretório do curso:
-     cd ~/Curso-documentDB
-
-💡 DICAS:
-  - Suas credenciais AWS já estão configuradas
-  - Use 'mongosh' para conectar ao DocumentDB
-  - O certificado SSL está em ~/global-bundle.pem
-  - Variável \$ID já está configurada com seu usuário
-
-📚 DOCUMENTAÇÃO:
-  - AWS DocumentDB: https://docs.aws.amazon.com/documentdb/
-  - MongoDB Shell: https://docs.mongodb.com/mongodb-shell/
-
-Bom curso! 🎓
-EOFWELCOME
-            
+            # Criar arquivo de boas-vindas (usando echo para evitar problemas com heredoc)
+            echo "╔══════════════════════════════════════════════════════════════╗" > /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "║              BEM-VINDO AO CURSO DOCUMENTDB                   ║" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "╚══════════════════════════════════════════════════════════════╝" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "Olá \${PrefixoAluno}${ALUNO_NUM}!" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "Seu ambiente está configurado e pronto para uso." >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "📋 INFORMAÇÕES DO AMBIENTE:" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "  - Usuário Linux: \${PrefixoAluno}${ALUNO_NUM}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "  - Região AWS: \${AWS::Region}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "🔧 FERRAMENTAS INSTALADAS:" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "  ✓ AWS CLI, MongoDB Shell, Node.js, Python, Terraform, Git" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "🚀 PRIMEIROS PASSOS:" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "  1. Teste: aws sts get-caller-identity" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "  2. Acesse: cd ~/Curso-documentDB" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "Bom curso! 🎓" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
             chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
             
-            # Adicionar exibição do banner no .bashrc
-            cat >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc <<'EOFBASHRC'
-
-# Customizações do Curso DocumentDB
-export PS1='\\[\\033[01;32m\\]\\u@documentdb-lab\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '
-
-# Aliases úteis
-alias ll='ls -lah'
-alias curso='cd ~/Curso-documentDB'
-alias awsid='aws sts get-caller-identity'
-
-# Mostrar boas-vindas no primeiro login
-if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then
-    cat ~/BEM-VINDO.txt
-    touch ~/.welcome_shown
-fi
-
-echo ""
-echo "💡 Digite 'cat ~/BEM-VINDO.txt' para ver as informações do ambiente"
-echo ""
-EOFBASHRC
-            
+            # Adicionar customizações ao .bashrc
+            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "# Aliases úteis" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "alias ll='ls -lah'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "alias curso='cd ~/Curso-documentDB'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "alias awsid='aws sts get-caller-identity'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "# Mostrar boas-vindas no primeiro login" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "    cat ~/BEM-VINDO.txt" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "    touch ~/.welcome_shown" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "fi" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/
             
