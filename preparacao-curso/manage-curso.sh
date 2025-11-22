@@ -36,7 +36,7 @@ cat << "EOF"
 ╔══════════════════════════════════════════════════════════════╗
 ║                GERENCIADOR DO CURSO DOCUMENTDB               ║
 ║                                                              ║
-║  Gerencie instâncias, usuários e recursos do curso          ║
+║  Gerencie instâncias, usuários e recursos do curso           ║
 ╚══════════════════════════════════════════════════════════════╝
 EOF
 echo -e "${NC}"
