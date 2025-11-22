@@ -229,18 +229,14 @@ Resources:
       UserName: !Sub '${AWS::StackName}-${PrefixoAluno}01'
       Groups:
         - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: true
 
   Aluno01AccessKey:
     Type: AWS::IAM::AccessKey
     Properties:
       UserName: !Ref Aluno01User
-
-  Aluno01LoginProfile:
-    Type: AWS::IAM::LoginProfile
-    Properties:
-      UserName: !Ref Aluno01User
-      Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
-      PasswordResetRequired: true
 
   Aluno01Instance:
     Type: AWS::EC2::Instance
@@ -400,18 +396,14 @@ BASHRC
       UserName: !Sub '${AWS::StackName}-${PrefixoAluno}02'
       Groups:
         - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: true
 
   Aluno02AccessKey:
     Type: AWS::IAM::AccessKey
     Properties:
       UserName: !Ref Aluno02User
-
-  Aluno02LoginProfile:
-    Type: AWS::IAM::LoginProfile
-    Properties:
-      UserName: !Ref Aluno02User
-      Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
-      PasswordResetRequired: true
 
   Aluno02Instance:
     Type: AWS::EC2::Instance

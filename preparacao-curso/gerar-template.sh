@@ -215,20 +215,15 @@ for i in $(seq 1 $NUM_ALUNOS); do
       UserName: !Sub '\${AWS::StackName}-\${PrefixoAluno}${ALUNO_NUM}'
       Groups:
         - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:\${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: true
 
   Aluno${ALUNO_NUM}AccessKey:
     Condition: CreateAluno${ALUNO_NUM}
     Type: AWS::IAM::AccessKey
     Properties:
       UserName: !Ref Aluno${ALUNO_NUM}User
-
-  Aluno${ALUNO_NUM}LoginProfile:
-    Condition: CreateAluno${ALUNO_NUM}
-    Type: AWS::IAM::LoginProfile
-    Properties:
-      UserName: !Ref Aluno${ALUNO_NUM}User
-      Password: !Sub '{{resolve:secretsmanager:\${ConsolePasswordSecret}:SecretString:password}}'
-      PasswordResetRequired: true
 
   Aluno${ALUNO_NUM}Instance:
     Condition: CreateAluno${ALUNO_NUM}
