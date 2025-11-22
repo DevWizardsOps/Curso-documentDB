@@ -2,6 +2,26 @@
 
 Este diretório contém scripts para preparar o ambiente AWS para o curso de DocumentDB.
 
+## 🎯 Início Rápido
+
+> 📚 **Primeira vez aqui?** Veja o **[INDEX.md](./INDEX.md)** para navegar pela documentação.
+
+**Para instrutores que querem começar rapidamente:**
+
+```bash
+cd preparacao-curso
+./deploy-curso.sh
+```
+
+O script irá guiá-lo através de todas as configurações necessárias.
+
+**Documentação disponível:**
+- 📖 **[README.md](./README.md)** (este arquivo) - Guia completo de uso
+- 📚 **[INDEX.md](./INDEX.md)** - Índice de toda a documentação
+- 🔑 **[INSTRUCOES-SSH.md](./INSTRUCOES-SSH.md)** - Como funcionam as chaves SSH
+- 👥 **[CREDENCIAIS-ALUNOS.md](./CREDENCIAIS-ALUNOS.md)** - Template para distribuir aos alunos
+- 🔒 **[PERMISSOES-IAM.md](./PERMISSOES-IAM.md)** - Referência técnica de permissões
+
 ## 🎯 O que é criado
 
 Para cada aluno, o script cria:
@@ -186,21 +206,34 @@ Veja mais detalhes em: [INSTRUCOES-SSH.md](./INSTRUCOES-SSH.md)
 └─────────────────────────────────────────────────────────┘
 ```
 
-## 📁 Arquivos
+## 📁 Estrutura de Arquivos
 
-### Scripts principais
-- `deploy-curso.sh` - Script automatizado para deploy completo (Opção 2)
-- `gerar-template.sh` - Gera template CloudFormation dinamicamente para N alunos
+### 🚀 Scripts de Deploy
+| Arquivo | Descrição | Quando Usar |
+|---------|-----------|-------------|
+| `deploy-curso.sh` | Script automatizado completo | Deploy de produção (1-20 alunos) |
+| `gerar-template.sh` | Gera template CloudFormation dinâmico | Chamado automaticamente pelo deploy-curso.sh |
 
-### Templates CloudFormation
-- `setup-curso-documentdb-simple.yaml` - Template estático para 2 alunos (Opção 1 - Teste Rápido)
-- `setup-curso-documentdb-dynamic.yaml` - Template gerado dinamicamente (criado pelo gerar-template.sh)
+### 📄 Templates CloudFormation
+| Arquivo | Descrição | Quando Usar |
+|---------|-----------|-------------|
+| `setup-curso-documentdb-simple.yaml` | Template fixo para 2 alunos | Testes rápidos e validação |
+| `setup-curso-documentdb-dynamic.yaml` | Template gerado dinamicamente | Criado automaticamente (não editar) |
 
-### Documentação e utilitários
-- `INSTRUCOES-SSH.md` - Instruções detalhadas sobre chaves SSH
-- `CREDENCIAIS-ALUNOS.md` - Template de credenciais para distribuir aos alunos
-- `conectar-aluno.sh` - Script auxiliar para conectar às instâncias
-- `README.md` - Este arquivo
+### 📚 Documentação
+| Arquivo | Conteúdo | Para Quem |
+|---------|----------|-----------|
+| `README.md` | **Este arquivo** - Guia principal de uso | Instrutores |
+| `INSTRUCOES-SSH.md` | Como usar chaves SSH e conectar | Instrutores e Alunos |
+| `CREDENCIAIS-ALUNOS.md` | Template de credenciais para distribuir | Instrutores → Alunos |
+| `PERMISSOES-IAM.md` | Detalhes de todas as permissões IAM | Instrutores (referência técnica) |
+
+### 🛠️ Utilitários
+| Arquivo | Descrição | Status |
+|---------|-----------|--------|
+| `conectar-aluno.sh` | Script auxiliar para conectar às instâncias | Em desenvolvimento |
+| `manage-curso.sh` | Gerenciador do ambiente | Em desenvolvimento |
+| `test-ambiente.sh` | Validador do ambiente | Em desenvolvimento |
 
 ## 🔧 Solução de Problemas
 

@@ -133,15 +133,19 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
+              # DocumentDB - Acesso completo
               - Effect: Allow
                 Action: 'docdb:*'
                 Resource: '*'
+              
+              # EC2 - Consultas e gerenciamento de Security Groups
               - Effect: Allow
                 Action:
                   - 'ec2:DescribeVpcs'
                   - 'ec2:DescribeSubnets'
                   - 'ec2:DescribeSecurityGroups'
                   - 'ec2:DescribeAvailabilityZones'
+                  - 'ec2:DescribeInstances'
                   - 'ec2:CreateSecurityGroup'
                   - 'ec2:AuthorizeSecurityGroupIngress'
                   - 'ec2:AuthorizeSecurityGroupEgress'
@@ -149,21 +153,113 @@ Resources:
                   - 'ec2:RevokeSecurityGroupEgress'
                   - 'ec2:DeleteSecurityGroup'
                   - 'ec2:CreateTags'
+                  - 'ec2:ModifySecurityGroupRules'
                 Resource: '*'
+              
+              # CloudWatch - Monitoramento e metricas
               - Effect: Allow
                 Action:
-                  - 'cloudwatch:*'
-                  - 'logs:*'
+                  - 'cloudwatch:GetMetricStatistics'
+                  - 'cloudwatch:ListMetrics'
+                  - 'cloudwatch:GetMetricData'
+                  - 'cloudwatch:DescribeAlarms'
+                  - 'cloudwatch:PutMetricAlarm'
+                  - 'cloudwatch:DeleteAlarms'
+                  - 'cloudwatch:PutDashboard'
+                  - 'cloudwatch:GetDashboard'
+                  - 'cloudwatch:ListDashboards'
+                  - 'cloudwatch:DeleteDashboards'
                 Resource: '*'
+              
+              # CloudWatch Logs - Visualizacao de logs
               - Effect: Allow
                 Action:
+                  - 'logs:DescribeLogGroups'
+                  - 'logs:DescribeLogStreams'
+                  - 'logs:GetLogEvents'
+                  - 'logs:FilterLogEvents'
+                Resource: '*'
+              
+              # S3 - Buckets do curso e backups dos alunos
+              - Effect: Allow
+                Action:
+                  - 's3:CreateBucket'
                   - 's3:ListBucket'
                   - 's3:GetObject'
                   - 's3:PutObject'
                   - 's3:DeleteObject'
+                  - 's3:GetBucketLocation'
+                  - 's3:PutBucketVersioning'
+                  - 's3:GetBucketVersioning'
+                  - 's3:PutLifecycleConfiguration'
+                  - 's3:GetLifecycleConfiguration'
+                  - 's3:PutBucketPolicy'
+                  - 's3:GetBucketPolicy'
+                  - 's3:ListAllMyBuckets'
                 Resource: 
                   - !Sub 'arn:aws:s3:::${AWS::StackName}-*'
                   - !Sub 'arn:aws:s3:::${AWS::StackName}-*/*'
+                  - 'arn:aws:s3:::*-docdb-backups-*'
+                  - 'arn:aws:s3:::*-docdb-backups-*/*'
+                  - 'arn:aws:s3:::*-lab-*'
+                  - 'arn:aws:s3:::*-lab-*/*'
+              
+              # EventBridge - Para automação básica
+              - Effect: Allow
+                Action:
+                  - 'events:PutRule'
+                  - 'events:DeleteRule'
+                  - 'events:PutTargets'
+                  - 'events:RemoveTargets'
+                  - 'events:DescribeRule'
+                  - 'events:ListRules'
+                  - 'events:ListTargetsByRule'
+                Resource: '*'
+              
+              # Lambda - Funcoes basicas para automacao
+              - Effect: Allow
+                Action:
+                  - 'lambda:CreateFunction'
+                  - 'lambda:DeleteFunction'
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:UpdateFunctionCode'
+                  - 'lambda:UpdateFunctionConfiguration'
+                  - 'lambda:GetFunction'
+                  - 'lambda:ListFunctions'
+                Resource: !Sub 'arn:aws:lambda:*:${AWS::AccountId}:function:${AWS::StackName}-*'
+              
+              # SNS - Notificacoes e alertas
+              - Effect: Allow
+                Action:
+                  - 'sns:CreateTopic'
+                  - 'sns:DeleteTopic'
+                  - 'sns:Subscribe'
+                  - 'sns:Unsubscribe'
+                  - 'sns:ListTopics'
+                  - 'sns:ListSubscriptions'
+                  - 'sns:SetTopicAttributes'
+                  - 'sns:GetTopicAttributes'
+                  - 'sns:Publish'
+                Resource: '*'
+              
+              # RDS - Alias para DocumentDB (alguns comandos usam namespace rds)
+              - Effect: Allow
+                Action:
+                  - 'rds:DescribeDBClusters'
+                  - 'rds:DescribeDBInstances'
+                  - 'rds:DescribeDBClusterSnapshots'
+                  - 'rds:DescribeDBSnapshots'
+                  - 'rds:ListTagsForResource'
+                Resource: '*'
+              
+              # KMS - Apenas visualizacao de chaves
+              - Effect: Allow
+                Action:
+                  - 'kms:Describe*'
+                  - 'kms:List*'
+                Resource: '*'
+              
+              # STS - Identificacao do usuario
               - Effect: Allow
                 Action: 'sts:GetCallerIdentity'
                 Resource: '*'
