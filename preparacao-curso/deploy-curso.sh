@@ -379,7 +379,7 @@ if [ $? -eq 0 ]; then
         echo ""
         echo -e "${YELLOW}💡 Dicas:${NC}"
         echo "  • Distribua o arquivo $KEY_FILE para os alunos"
-        echo "  • Compartilhe a URL do console e a senha: Extractta@2025"
+        echo "  • Compartilhe a URL do console e a senha: Extractta@2026"
         echo ""
         echo -e "${GREEN}✨ Ambiente pronto para o curso! ✨${NC}"
         
