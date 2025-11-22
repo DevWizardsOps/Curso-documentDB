@@ -173,7 +173,7 @@ aws cloudformation $ACTION \
         ParameterKey=VpcId,ParameterValue=$VPC_ID \
         ParameterKey=SubnetId,ParameterValue=$SUBNET_ID \
         ParameterKey=AllowedCIDR,ParameterValue=$ALLOWED_CIDR \
-    --capabilities CAPABILITY_IAM \
+    --capabilities CAPABILITY_NAMED_IAM \
     --tags \
         Key=Purpose,Value="Curso DocumentDB" \
         Key=Environment,Value="Lab" \
