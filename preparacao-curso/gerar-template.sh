@@ -174,13 +174,17 @@ Resources:
                   - 'cloudwatch:DeleteDashboards'
                 Resource: '*'
               
-              # CloudWatch Logs - Visualizacao de logs
+              # CloudWatch Logs - Visualizacao e gerenciamento de logs
               - Effect: Allow
                 Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:DeleteLogGroup'
                   - 'logs:DescribeLogGroups'
                   - 'logs:DescribeLogStreams'
                   - 'logs:GetLogEvents'
                   - 'logs:FilterLogEvents'
+                  - 'logs:PutRetentionPolicy'
+                  - 'logs:DeleteRetentionPolicy'
                 Resource: '*'
               
               # S3 - Buckets do curso e backups dos alunos
@@ -252,7 +256,32 @@ Resources:
                   - 'rds:DescribeDBInstances'
                   - 'rds:DescribeDBClusterSnapshots'
                   - 'rds:DescribeDBSnapshots'
+                  - 'rds:DescribeDBSubnetGroups'
+                  - 'rds:DescribeDBClusterParameterGroups'
+                  - 'rds:DescribeDBClusterParameters'
+                  - 'rds:DescribeDBParameters'
+                  - 'rds:DescribeDBParameterGroups'
+                  - 'rds:CreateDBClusterParameterGroup'
+                  - 'rds:ModifyDBClusterParameterGroup'
+                  - 'rds:DeleteDBClusterParameterGroup'
                   - 'rds:ListTagsForResource'
+                  - 'rds:AddTagsToResource'
+                Resource: '*'
+              
+              # CloudTrail - Auditoria e compliance (Modulo 3)
+              - Effect: Allow
+                Action:
+                  - 'cloudtrail:CreateTrail'
+                  - 'cloudtrail:DeleteTrail'
+                  - 'cloudtrail:StartLogging'
+                  - 'cloudtrail:StopLogging'
+                  - 'cloudtrail:UpdateTrail'
+                  - 'cloudtrail:GetTrailStatus'
+                  - 'cloudtrail:DescribeTrails'
+                  - 'cloudtrail:ListTrails'
+                  - 'cloudtrail:LookupEvents'
+                  - 'cloudtrail:PutEventSelectors'
+                  - 'cloudtrail:GetEventSelectors'
                 Resource: '*'
               
               # KMS - Apenas visualizacao de chaves
