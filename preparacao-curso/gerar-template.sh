@@ -388,7 +388,7 @@ for i in $(seq 1 $NUM_ALUNOS); do
             sudo -u \${PrefixoAluno}${ALUNO_NUM} echo 'export ID=${PrefixoAluno}${ALUNO_NUM}' >> /home/${PrefixoAluno}${ALUNO_NUM}/.bashrc
             
             # Criar arquivo de boas-vindas
-            cat > /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt << 'WELCOME'
+            cat > /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt <<'EOFWELCOME'
 ╔══════════════════════════════════════════════════════════════╗
 ║              BEM-VINDO AO CURSO DOCUMENTDB                   ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -436,15 +436,15 @@ Seu ambiente está configurado e pronto para uso.
   - MongoDB Shell: https://docs.mongodb.com/mongodb-shell/
 
 Bom curso! 🎓
-WELCOME
+EOFWELCOME
             
             chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
             
             # Adicionar exibição do banner no .bashrc
-            cat >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc << 'BASHRC'
+            cat >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc <<'EOFBASHRC'
 
 # Customizações do Curso DocumentDB
-export PS1='\[\033[01;32m\]\u@documentdb-lab\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+export PS1='\\[\\033[01;32m\\]\\u@documentdb-lab\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '
 
 # Aliases úteis
 alias ll='ls -lah'
@@ -460,7 +460,7 @@ fi
 echo ""
 echo "💡 Digite 'cat ~/BEM-VINDO.txt' para ver as informações do ambiente"
 echo ""
-BASHRC
+EOFBASHRC
             
             chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/

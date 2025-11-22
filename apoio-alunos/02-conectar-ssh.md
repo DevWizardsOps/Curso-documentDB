@@ -46,10 +46,6 @@ Aluno 01:
   Usuário: aluno01
 ```
 
-**Anote aqui**:
-- Meu IP: `_______________________`
-- Meu usuário: `aluno___`
-
 ---
 
 ## 🔌 Passo 3: Conectar via SSH
