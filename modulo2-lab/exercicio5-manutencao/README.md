@@ -10,7 +10,7 @@
 ## ⏱️ Duração Estimada
 60 minutos
 
-> ⚠️ **Atenção:** Lembre-se de usar seu prefixo de aluno (`<seu-id>`) em todos os nomes de recursos e comandos.
+> ⚠️ **Atenção:** Use seu número de aluno como prefixo em todos os recursos (ex: `aluno01`, `aluno02`). A variável `$ID` já está configurada no seu ambiente.
 
 ---
 

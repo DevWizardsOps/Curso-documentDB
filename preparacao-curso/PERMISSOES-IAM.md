@@ -34,6 +34,9 @@ Actions:
   - ec2:DescribeSecurityGroups
   - ec2:DescribeAvailabilityZones
   - ec2:DescribeInstances
+  - ec2:DescribeAccountAttributes
+  - ec2:DescribeVpcAttribute
+  - ec2:DescribeSubnetAttribute
   - ec2:CreateSecurityGroup
   - ec2:AuthorizeSecurityGroupIngress
   - ec2:AuthorizeSecurityGroupEgress
@@ -45,16 +48,21 @@ Actions:
 Resource: '*'
 ```
 
-**Justificativa**: Alunos precisam criar e gerenciar Security Groups para controlar acesso ao DocumentDB.
+**Justificativa**: Alunos precisam criar e gerenciar Security Groups para controlar acesso ao DocumentDB. As permissões `DescribeAccountAttributes`, `DescribeVpcAttribute` e `DescribeSubnetAttribute` são necessárias para criar subnet groups do DocumentDB.
 
 **Módulos que usam**:
-- Módulo 2, Exercício 1: Criar Security Groups para clusters
+- Módulo 2, Exercício 1: Criar Security Groups e Subnet Groups para clusters
 - Módulo 3, Exercício 2: Configurar isolamento de rede
+
+**Permissões Adicionadas (v2.1)**:
+- ✅ `ec2:DescribeAccountAttributes` - Necessário para criar subnet groups do DocumentDB
+- ✅ `ec2:DescribeVpcAttribute` - Validar configurações de VPC
+- ✅ `ec2:DescribeSubnetAttribute` - Validar configurações de Subnet
 
 **Limitações**:
 - ❌ Não podem criar/modificar instâncias EC2
 - ❌ Não podem criar/modificar VPCs ou Subnets
-- ✅ Podem apenas gerenciar Security Groups
+- ✅ Podem apenas gerenciar Security Groups e consultar atributos de rede
 
 ---
 

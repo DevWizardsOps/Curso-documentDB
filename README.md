@@ -48,52 +48,40 @@ cd preparacao-curso/
 
 ## 👨‍🎓 Para Alunos
 
+### 🚀 Guias de Configuração Inicial
+
+**IMPORTANTE**: Antes de começar qualquer módulo, siga os guias de apoio:
+
+📚 **[Acesse os Guias de Apoio](./apoio-alunos/README.md)**
+
+Os guias vão te ajudar a:
+1. 🔑 Baixar a chave SSH do S3
+2. 🔌 Conectar à sua instância EC2
+3. ✅ Verificar que o ambiente está funcionando
+
+**Tempo estimado**: 15 minutos
+
 ### Pré-requisitos
 
 - Conhecimento básico de bancos de dados NoSQL
 - Familiaridade com conceitos de cloud computing
 - Acesso à instância EC2 fornecida pelo instrutor
 
-### Como Conectar ao Ambiente
+### Resumo Rápido (Após Seguir os Guias)
 
-1. **Receba do instrutor:**
-   - IP público da sua instância
-   - Nome da chave SSH
-   - Seu número de aluno
-
-2. **Baixe a chave SSH** do console EC2 (o instrutor fornecerá acesso)
-
-3. **Configure permissões:**
-   ```bash
-   chmod 400 nome-da-chave.pem
-   ```
-
-4. **Conecte via SSH diretamente ao seu usuário:**
-   ```bash
-   ssh -i nome-da-chave.pem alunoXX@SEU-IP-PUBLICO  # XX = seu número
-   ```
-   
-   Alternativa (via ec2-user):
-   ```bash
-   ssh -i nome-da-chave.pem ec2-user@SEU-IP-PUBLICO
-   sudo su - alunoXX
-   ```
-
-### Verificar Configuração
-
+**Conectar via SSH**:
 ```bash
-# Testar AWS CLI (deve mostrar suas credenciais)
-aws sts get-caller-identity
-
-# Verificar ferramentas instaladas
-mongosh --version
-node --version
-python3 --version
-terraform --version
-
-# Verificar certificado DocumentDB
-ls -la ~/global-bundle.pem
+ssh -i nome-da-chave.pem alunoXX@SEU-IP-PUBLICO
 ```
+
+**Verificar configuração**:
+```bash
+aws sts get-caller-identity  # Ver suas credenciais
+mongosh --version            # Verificar MongoDB Shell
+labs                         # Ir para diretório de trabalho
+```
+
+**Precisa de ajuda?** Consulte os [Guias de Apoio](./apoio-alunos/README.md)
 
 ## 📋 Roteiro de Estudo
 

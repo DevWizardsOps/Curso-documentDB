@@ -11,7 +11,7 @@
 ## ⏱️ Duração Estimada
 75 minutos
 
-> ⚠️ **Atenção:** Lembre-se de usar seu prefixo de aluno (`<seu-id>`) em todos os nomes de recursos e comandos.
+> ⚠️ **Atenção:** Use seu número de aluno como prefixo em todos os recursos (ex: `aluno01`, `aluno02`). A variável `$ID` já está configurada no seu ambiente.
 
 ---
 
@@ -85,8 +85,9 @@ Clique em **Save dashboard** no canto superior direito
 ### Via CLI
 
 ```bash
-# Defina sua variável de ID (substitua pelo seu ID de aluno)
-export ID="<seu-id>"
+# A variável $ID já está configurada automaticamente
+# Verifique com: echo $ID
+# Resultado esperado: aluno01, aluno02, etc.
 
 # Primeiro, substitua YOUR_CLUSTER_IDENTIFIER no arquivo dashboard.json
 sed -i.bak "s/YOUR_CLUSTER_IDENTIFIER/$ID-lab-cluster-console/g" cloudwatch/dashboard.json

@@ -465,8 +465,8 @@ timeout 5 bash -c "</dev/tcp/$CLUSTER_ENDPOINT/27017" && echo "✅ Conectividade
 Execute o script de validação para verificar automaticamente se o exercício foi concluído:
 
 ```bash
-# Configurar seu ID (mesmo do Módulo 2)
-export ID="seu-nome"
+# A variável $ID já está configurada automaticamente
+# Verifique com: echo $ID
 
 # Executar validação
 chmod +x grade_exercicio2.sh

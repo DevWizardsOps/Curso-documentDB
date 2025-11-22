@@ -146,6 +146,9 @@ Resources:
                   - 'ec2:DescribeSecurityGroups'
                   - 'ec2:DescribeAvailabilityZones'
                   - 'ec2:DescribeInstances'
+                  - 'ec2:DescribeAccountAttributes'
+                  - 'ec2:DescribeVpcAttribute'
+                  - 'ec2:DescribeSubnetAttribute'
                   - 'ec2:CreateSecurityGroup'
                   - 'ec2:AuthorizeSecurityGroupIngress'
                   - 'ec2:AuthorizeSecurityGroupEgress'
@@ -383,7 +386,85 @@ for i in $(seq 1 $NUM_ALUNOS); do
             sudo -u \${PrefixoAluno}${ALUNO_NUM} \
               rm -fr /home/\${PrefixoAluno}${ALUNO_NUM}/Curso-documentDB/preparacao-curso
             sudo -u \${PrefixoAluno}${ALUNO_NUM} echo 'export ID=${PrefixoAluno}${ALUNO_NUM}' >> /home/${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            
+            # Criar arquivo de boas-vindas
+            cat > /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt << 'WELCOME'
+╔══════════════════════════════════════════════════════════════╗
+║              BEM-VINDO AO CURSO DOCUMENTDB                   ║
+╚══════════════════════════════════════════════════════════════╝
+
+Olá \${PrefixoAluno}${ALUNO_NUM}!
+
+Seu ambiente está configurado e pronto para uso.
+
+📋 INFORMAÇÕES DO AMBIENTE:
+  - Usuário Linux: \${PrefixoAluno}${ALUNO_NUM}
+  - Usuário AWS IAM: \${AWS::StackName}-\${PrefixoAluno}${ALUNO_NUM}
+  - Região AWS: \${AWS::Region}
+  - Chave SSH: \${KeyPairName}
+
+🔧 FERRAMENTAS INSTALADAS:
+  ✓ AWS CLI (já configurado com suas credenciais)
+  ✓ MongoDB Shell (mongosh)
+  ✓ Node.js 18.x
+  ✓ Python 3 + pip
+  ✓ Terraform
+  ✓ Git
+
+📁 DIRETÓRIOS:
+  - Curso: ~/Curso-documentDB
+  - Certificado SSL: ~/global-bundle.pem
+
+🚀 PRIMEIROS PASSOS:
+  1. Teste o AWS CLI:
+     aws sts get-caller-identity
+
+  2. Liste recursos disponíveis:
+     aws docdb describe-db-clusters
+
+  3. Acesse o diretório do curso:
+     cd ~/Curso-documentDB
+
+💡 DICAS:
+  - Suas credenciais AWS já estão configuradas
+  - Use 'mongosh' para conectar ao DocumentDB
+  - O certificado SSL está em ~/global-bundle.pem
+  - Variável \$ID já está configurada com seu usuário
+
+📚 DOCUMENTAÇÃO:
+  - AWS DocumentDB: https://docs.aws.amazon.com/documentdb/
+  - MongoDB Shell: https://docs.mongodb.com/mongodb-shell/
+
+Bom curso! 🎓
+WELCOME
+            
+            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            
+            # Adicionar exibição do banner no .bashrc
+            cat >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc << 'BASHRC'
+
+# Customizações do Curso DocumentDB
+export PS1='\[\033[01;32m\]\u@documentdb-lab\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+# Aliases úteis
+alias ll='ls -lah'
+alias curso='cd ~/Curso-documentDB'
+alias awsid='aws sts get-caller-identity'
+
+# Mostrar boas-vindas no primeiro login
+if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then
+    cat ~/BEM-VINDO.txt
+    touch ~/.welcome_shown
+fi
+
+echo ""
+echo "💡 Digite 'cat ~/BEM-VINDO.txt' para ver as informações do ambiente"
+echo ""
+BASHRC
+            
+            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/
+            
             echo "Setup completo em \$(date)" > /home/\${PrefixoAluno}${ALUNO_NUM}/setup-complete.txt
             chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/setup-complete.txt
           - AccessKey: !Ref Aluno${ALUNO_NUM}AccessKey

@@ -10,7 +10,7 @@
 ## ⏱️ Duração Estimada
 60 minutos
 
-> ⚠️ **Atenção:** Para evitar conflitos de nomes, todos os recursos criados neste laboratório devem ser prefixados com um identificador único seu (ex: seu nome ou iniciais). Ex: `seu-id-docdb-lab-subnet-group`.
+> ⚠️ **Atenção:** Use seu número de aluno como prefixo em todos os recursos (ex: `aluno01`, `aluno02`). A variável `$ID` já está configurada no seu ambiente. Ex: `aluno01-docdb-lab-subnet-group`.
 
 ## 📚 Parte 1: Provisionamento via AWS Console
 
@@ -72,8 +72,8 @@
 ### Passo 4: Verificar o Cluster
 
 ```bash
-# Definir ID
-ID="seu-id"
+# A variável $ID já está configurada automaticamente
+# Verifique com: echo $ID
 
 # Listar clusters (substitua <seu-id>)
 aws docdb describe-db-clusters \
@@ -130,7 +130,7 @@ cd terraform/
 Crie um arquivo `terraform.tfvars` com seu identificador único:
 
 ```hcl
-student_id         = "seu-id" // IMPORTANTE: Use um ID único!
+student_id         = "aluno01" // Use seu número de aluno (aluno01, aluno02, etc.)
 cluster_identifier = "lab-cluster-terraform"
 master_username    = "docdbadmin"
 master_password    = "Lab12345!"

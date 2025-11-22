@@ -10,7 +10,7 @@
 ## ⏱️ Duração Estimada
 75 minutos
 
-> ⚠️ **Atenção:** Lembre-se de usar seu prefixo de aluno (`<seu-id>`) em todos os nomes de recursos e comandos.
+> ⚠️ **Atenção:** Use seu número de aluno como prefixo em todos os recursos (ex: `aluno01`, `aluno02`). A variável `$ID` já está configurada no seu ambiente.
 
 ---
 
@@ -19,8 +19,9 @@
 ### Passo 1: Preparar Ambiente
 
 ```bash
-# Configurar variáveis
-export ID="<seu-id>"
+# A variável $ID já está configurada automaticamente
+# Verifique com: echo $ID
+# Resultado esperado: aluno01, aluno02, etc.
 export CLUSTER_ID="$ID-lab-cluster-console"
 export BACKUP_BUCKET="$ID-docdb-backups-$(date +%Y%m%d)"
 export REGION="us-east-2"
