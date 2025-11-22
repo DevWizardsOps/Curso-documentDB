@@ -111,7 +111,8 @@ Seu usuário tem permissões para:
 ### Não consigo fazer login no console
 - Verifique se está usando o nome de usuário completo: `[stack-name]-alunoXX`
 - Certifique-se de estar na URL correta com o Account ID
-- A senha é: `Extractta@2025`
+- A senha padrão é: `Extractta@2026`
+- Você será solicitado a trocar a senha no primeiro login
 
 ### Erro "Permission denied" no SSH
 ```bash
@@ -127,9 +128,9 @@ aws configure list
 # Se necessário, o instrutor pode fornecer novas credenciais
 ```
 
-### Esqueci a senha do console
-- A senha é: `Extractta@2025`
-- Se ainda tiver problemas, entre em contato com o instrutor
+### Esqueci minha nova senha do console
+- A senha padrão inicial é: `Extractta@2026`
+- Se você já trocou a senha e esqueceu, entre em contato com o instrutor para reset
 
 ## 📞 Suporte
 

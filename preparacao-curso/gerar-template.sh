@@ -313,7 +313,7 @@ for i in $(seq 1 $NUM_ALUNOS); do
         - !Ref CursoDocumentDBGroup
       LoginProfile:
         Password: !Sub '{{resolve:secretsmanager:\${ConsolePasswordSecret}:SecretString:password}}'
-        PasswordResetRequired: true
+        PasswordResetRequired: false
 
   Aluno${ALUNO_NUM}AccessKey:
     Condition: CreateAluno${ALUNO_NUM}

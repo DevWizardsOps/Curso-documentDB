@@ -27,7 +27,7 @@ O script irá guiá-lo através de todas as configurações necessárias.
 Para cada aluno, o script cria:
 - ✅ Instância EC2 (t3.micro) com Amazon Linux 2
 - ✅ Usuário IAM com permissões para DocumentDB
-- ✅ **Acesso ao Console AWS** (senha: `Extractta@2025`)
+- ✅ **Acesso ao Console AWS** (senha padrão: `Extractta@2026`, reset obrigatório no 1º login)
 - ✅ Access Keys configuradas automaticamente na instância
 - ✅ Ambiente pré-configurado (MongoDB Shell, Node.js, Python, Terraform)
 - ✅ Security Groups para EC2 e DocumentDB
