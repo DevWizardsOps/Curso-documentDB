@@ -133,22 +133,35 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              # DocumentDB - Acesso completo
+              # DocumentDB - Acesso completo (sem restrições para ambiente de treinamento)
               - Effect: Allow
                 Action: 'docdb:*'
                 Resource: '*'
               
-              # EC2 - Consultas e gerenciamento de Security Groups
+              # RDS - Acesso completo exceto criação de instâncias (DocumentDB usa namespace RDS)
+              - Effect: Allow
+                Action: 'rds:*'
+                Resource: '*'
+                Condition:
+                  StringLike:
+                    'rds:DatabaseClass':
+                      - 'db.t3.medium'
+                      - 'db.t3.large'
+                      - 'db.t3.xlarge'
+                      - 'db.r5.large'
+                      - 'db.r5.xlarge'
+              
+              # RDS - Operações de leitura sem restrições
               - Effect: Allow
                 Action:
-                  - 'ec2:DescribeVpcs'
-                  - 'ec2:DescribeSubnets'
-                  - 'ec2:DescribeSecurityGroups'
-                  - 'ec2:DescribeAvailabilityZones'
-                  - 'ec2:DescribeInstances'
-                  - 'ec2:DescribeAccountAttributes'
-                  - 'ec2:DescribeVpcAttribute'
-                  - 'ec2:DescribeSubnetAttribute'
+                  - 'rds:Describe*'
+                  - 'rds:List*'
+                Resource: '*'
+              
+              # EC2 - Consultas e gerenciamento (sem restrições de leitura)
+              - Effect: Allow
+                Action:
+                  - 'ec2:Describe*'
                   - 'ec2:CreateSecurityGroup'
                   - 'ec2:AuthorizeSecurityGroupIngress'
                   - 'ec2:AuthorizeSecurityGroupEgress'
@@ -157,34 +170,44 @@ Resources:
                   - 'ec2:DeleteSecurityGroup'
                   - 'ec2:CreateTags'
                   - 'ec2:ModifySecurityGroupRules'
+                  - 'ec2:CreateKeyPair'
+                  - 'ec2:DeleteKeyPair'
+                  - 'ec2:ImportKeyPair'
+                  - 'ec2:CreateVolume'
+                  - 'ec2:DeleteVolume'
+                  - 'ec2:AttachVolume'
+                  - 'ec2:DetachVolume'
+                  - 'ec2:ModifyVolume'
+                  - 'ec2:CreateSnapshot'
+                  - 'ec2:DeleteSnapshot'
+                  - 'ec2:StopInstances'
+                  - 'ec2:StartInstances'
+                  - 'ec2:RebootInstances'
+                  - 'ec2:TerminateInstances'
                 Resource: '*'
               
-              # CloudWatch - Monitoramento e metricas
+              # EC2 - RunInstances com restrição de tipo de instância (família t3 até xlarge)
               - Effect: Allow
-                Action:
-                  - 'cloudwatch:GetMetricStatistics'
-                  - 'cloudwatch:ListMetrics'
-                  - 'cloudwatch:GetMetricData'
-                  - 'cloudwatch:DescribeAlarms'
-                  - 'cloudwatch:PutMetricAlarm'
-                  - 'cloudwatch:DeleteAlarms'
-                  - 'cloudwatch:PutDashboard'
-                  - 'cloudwatch:GetDashboard'
-                  - 'cloudwatch:ListDashboards'
-                  - 'cloudwatch:DeleteDashboards'
+                Action: 'ec2:RunInstances'
+                Resource: '*'
+                Condition:
+                  StringLike:
+                    'ec2:InstanceType':
+                      - 't3.nano'
+                      - 't3.micro'
+                      - 't3.small'
+                      - 't3.medium'
+                      - 't3.large'
+                      - 't3.xlarge'
+              
+              # CloudWatch - Acesso completo (sem restrições para treinamento)
+              - Effect: Allow
+                Action: 'cloudwatch:*'
                 Resource: '*'
               
-              # CloudWatch Logs - Visualizacao e gerenciamento de logs
+              # CloudWatch Logs - Acesso completo (sem restrições para treinamento)
               - Effect: Allow
-                Action:
-                  - 'logs:CreateLogGroup'
-                  - 'logs:DeleteLogGroup'
-                  - 'logs:DescribeLogGroups'
-                  - 'logs:DescribeLogStreams'
-                  - 'logs:GetLogEvents'
-                  - 'logs:FilterLogEvents'
-                  - 'logs:PutRetentionPolicy'
-                  - 'logs:DeleteRetentionPolicy'
+                Action: 'logs:*'
                 Resource: '*'
               
               # S3 - Buckets do curso e backups dos alunos
@@ -211,16 +234,9 @@ Resources:
                   - 'arn:aws:s3:::*-lab-*'
                   - 'arn:aws:s3:::*-lab-*/*'
               
-              # EventBridge - Para automação básica
+              # EventBridge - Acesso completo (sem restrições para treinamento)
               - Effect: Allow
-                Action:
-                  - 'events:PutRule'
-                  - 'events:DeleteRule'
-                  - 'events:PutTargets'
-                  - 'events:RemoveTargets'
-                  - 'events:DescribeRule'
-                  - 'events:ListRules'
-                  - 'events:ListTargetsByRule'
+                Action: 'events:*'
                 Resource: '*'
               
               # Lambda - Funcoes basicas para automacao
@@ -235,38 +251,12 @@ Resources:
                   - 'lambda:ListFunctions'
                 Resource: !Sub 'arn:aws:lambda:*:${AWS::AccountId}:function:${AWS::StackName}-*'
               
-              # SNS - Notificacoes e alertas
+              # SNS - Acesso completo (sem restrições para treinamento)
               - Effect: Allow
-                Action:
-                  - 'sns:CreateTopic'
-                  - 'sns:DeleteTopic'
-                  - 'sns:Subscribe'
-                  - 'sns:Unsubscribe'
-                  - 'sns:ListTopics'
-                  - 'sns:ListSubscriptions'
-                  - 'sns:SetTopicAttributes'
-                  - 'sns:GetTopicAttributes'
-                  - 'sns:Publish'
+                Action: 'sns:*'
                 Resource: '*'
               
-              # RDS - Alias para DocumentDB (alguns comandos usam namespace rds)
-              - Effect: Allow
-                Action:
-                  - 'rds:DescribeDBClusters'
-                  - 'rds:DescribeDBInstances'
-                  - 'rds:DescribeDBClusterSnapshots'
-                  - 'rds:DescribeDBSnapshots'
-                  - 'rds:DescribeDBSubnetGroups'
-                  - 'rds:DescribeDBClusterParameterGroups'
-                  - 'rds:DescribeDBClusterParameters'
-                  - 'rds:DescribeDBParameters'
-                  - 'rds:DescribeDBParameterGroups'
-                  - 'rds:CreateDBClusterParameterGroup'
-                  - 'rds:ModifyDBClusterParameterGroup'
-                  - 'rds:DeleteDBClusterParameterGroup'
-                  - 'rds:ListTagsForResource'
-                  - 'rds:AddTagsToResource'
-                Resource: '*'
+
               
               # CloudTrail - Auditoria e compliance (Modulo 3)
               - Effect: Allow
@@ -284,11 +274,9 @@ Resources:
                   - 'cloudtrail:GetEventSelectors'
                 Resource: '*'
               
-              # KMS - Apenas visualizacao de chaves
+              # KMS - Acesso completo (sem restrições para treinamento)
               - Effect: Allow
-                Action:
-                  - 'kms:Describe*'
-                  - 'kms:List*'
+                Action: 'kms:*'
                 Resource: '*'
               
               # STS - Identificacao do usuario

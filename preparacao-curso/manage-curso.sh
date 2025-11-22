@@ -325,9 +325,16 @@ force_cleanup_resources() {
     
     # 5. Deletar IAM Groups e Políticas Inline
     log "Procurando grupos IAM da stack..."
+    # Procurar grupos que contenham o nome da stack (ex: curso-documentdb-students)
     IAM_GROUPS=$(aws iam list-groups \
         --query "Groups[?contains(GroupName, '$stack_name')].GroupName" \
         --output text 2>/dev/null)
+    
+    # Adicionar grupo específico se existir (padrão: {stack-name}-students)
+    SPECIFIC_GROUP="${stack_name}-students"
+    if aws iam get-group --group-name "$SPECIFIC_GROUP" &> /dev/null; then
+        IAM_GROUPS="$IAM_GROUPS $SPECIFIC_GROUP"
+    fi
     
     if [ ! -z "$IAM_GROUPS" ]; then
         for group in $IAM_GROUPS; do
@@ -418,21 +425,18 @@ cleanup_stack() {
         fi
     fi
     
-    # Verificar se existe secret no Secrets Manager
+    # Guardar informação sobre o secret para deletar DEPOIS da stack
     SECRET_NAME="${stack_name}-console-password"
+    DELETE_SECRET_AFTER=false
+    
     if aws secretsmanager describe-secret --secret-id $SECRET_NAME &> /dev/null 2>&1; then
         echo -e "\n${YELLOW}🔐 Secret encontrado: ${SECRET_NAME}${NC}"
-        read -p "Deletar também o secret do Secrets Manager? (Y/n): " DELETE_SECRET
+        echo "⚠️  O secret será deletado APÓS a stack (para evitar erros de dependência)"
+        read -p "Deletar o secret após deletar a stack? (Y/n): " DELETE_SECRET
         
         if [[ ! $DELETE_SECRET =~ ^[Nn]$ ]]; then
-            log "Deletando secret..."
-            aws secretsmanager delete-secret --secret-id $SECRET_NAME --force-delete-without-recovery
-            
-            if [ $? -eq 0 ]; then
-                success "Secret deletado: ${SECRET_NAME}"
-            else
-                warning "Erro ao deletar secret"
-            fi
+            DELETE_SECRET_AFTER=true
+            log "Secret será deletado após a stack"
         else
             warning "Secret será mantido"
         fi
@@ -474,6 +478,39 @@ cleanup_stack() {
         
         if [ $WAIT_RESULT -eq 0 ]; then
             success "Stack deletada com sucesso!"
+            
+            # Deletar secret DEPOIS da stack (se solicitado)
+            if [ "$DELETE_SECRET_AFTER" = true ]; then
+                log "Deletando secret do Secrets Manager..."
+                aws secretsmanager delete-secret --secret-id $SECRET_NAME --force-delete-without-recovery 2>/dev/null
+                
+                if [ $? -eq 0 ]; then
+                    success "Secret deletado: ${SECRET_NAME}"
+                else
+                    warning "Erro ao deletar secret (pode já ter sido deletado)"
+                fi
+            fi
+            
+            # Verificar e deletar grupo IAM se ainda existir
+            SPECIFIC_GROUP="${stack_name}-students"
+            if aws iam get-group --group-name "$SPECIFIC_GROUP" &> /dev/null; then
+                log "Deletando grupo IAM órfão: $SPECIFIC_GROUP"
+                
+                # Remover políticas inline
+                aws iam list-group-policies --group-name "$SPECIFIC_GROUP" --query 'PolicyNames[]' --output text 2>/dev/null | \
+                  xargs -I {} aws iam delete-group-policy --group-name "$SPECIFIC_GROUP" --policy-name {} 2>/dev/null || true
+                
+                # Remover políticas gerenciadas
+                aws iam list-attached-group-policies --group-name "$SPECIFIC_GROUP" --query 'AttachedPolicies[].PolicyArn' --output text 2>/dev/null | \
+                  xargs -I {} aws iam detach-group-policy --group-name "$SPECIFIC_GROUP" --policy-arn {} 2>/dev/null || true
+                
+                # Remover usuários do grupo
+                aws iam get-group --group-name "$SPECIFIC_GROUP" --query 'Users[].UserName' --output text 2>/dev/null | \
+                  xargs -I {} aws iam remove-user-from-group --group-name "$SPECIFIC_GROUP" --user-name {} 2>/dev/null || true
+                
+                # Deletar grupo
+                aws iam delete-group --group-name "$SPECIFIC_GROUP" 2>/dev/null && success "Grupo IAM deletado" || warning "Erro ao deletar grupo IAM"
+            fi
             
             # Limpar arquivo local de informações da chave SSH se existir
             if [ -f ".ssh-key-info" ]; then
