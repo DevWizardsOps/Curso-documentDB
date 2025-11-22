@@ -230,21 +230,97 @@ cleanup_stack() {
     warning "Esta ação irá DELETAR PERMANENTEMENTE todos os recursos da stack!"
     echo "Stack: $stack_name"
     echo ""
-    read -p "Digite 'DELETE' para confirmar: " CONFIRM
+    
+    # Obter informações da conta para construir o nome do bucket
+    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    S3_BUCKET="${stack_name}-keys-${ACCOUNT_ID}"
+    
+    # Verificar se o bucket S3 existe
+    if aws s3 ls "s3://${S3_BUCKET}" &> /dev/null; then
+        echo -e "\n${YELLOW}🗑️  Bucket S3 encontrado: ${S3_BUCKET}${NC}"
+        read -p "Deletar também o bucket S3 com as chaves? (Y/n): " DELETE_S3
+        
+        if [[ ! $DELETE_S3 =~ ^[Nn]$ ]]; then
+            log "Listando objetos no bucket..."
+            OBJECTS=$(aws s3 ls "s3://${S3_BUCKET}" --recursive)
+            
+            if [ ! -z "$OBJECTS" ]; then
+                echo -e "\n${YELLOW}Objetos no bucket:${NC}"
+                echo "$OBJECTS"
+                echo ""
+            fi
+            
+            log "Removendo todos os objetos do bucket..."
+            aws s3 rm "s3://${S3_BUCKET}" --recursive
+            
+            if [ $? -eq 0 ]; then
+                success "Objetos removidos do bucket"
+                
+                log "Deletando bucket S3..."
+                aws s3 rb "s3://${S3_BUCKET}"
+                
+                if [ $? -eq 0 ]; then
+                    success "Bucket S3 deletado: ${S3_BUCKET}"
+                else
+                    warning "Erro ao deletar bucket S3 (pode não estar vazio)"
+                fi
+            else
+                warning "Erro ao remover objetos do bucket"
+            fi
+        else
+            warning "Bucket S3 será mantido"
+        fi
+    fi
+    
+    # Verificar se existe secret no Secrets Manager
+    SECRET_NAME="${stack_name}-console-password"
+    if aws secretsmanager describe-secret --secret-id $SECRET_NAME &> /dev/null 2>&1; then
+        echo -e "\n${YELLOW}🔐 Secret encontrado: ${SECRET_NAME}${NC}"
+        read -p "Deletar também o secret do Secrets Manager? (Y/n): " DELETE_SECRET
+        
+        if [[ ! $DELETE_SECRET =~ ^[Nn]$ ]]; then
+            log "Deletando secret..."
+            aws secretsmanager delete-secret --secret-id $SECRET_NAME --force-delete-without-recovery
+            
+            if [ $? -eq 0 ]; then
+                success "Secret deletado: ${SECRET_NAME}"
+            else
+                warning "Erro ao deletar secret"
+            fi
+        else
+            warning "Secret será mantido"
+        fi
+    fi
+    
+    echo ""
+    read -p "Digite 'DELETE' para confirmar a deleção da stack CloudFormation: " CONFIRM
     
     if [ "$CONFIRM" != "DELETE" ]; then
         error "Operação cancelada"
         return 1
     fi
     
-    log "Deletando stack $stack_name..."
+    log "Deletando stack CloudFormation $stack_name..."
     aws cloudformation delete-stack --stack-name $stack_name
     
     if [ $? -eq 0 ]; then
         success "Comando de deleção enviado"
         log "Aguardando conclusão da deleção..."
         aws cloudformation wait stack-delete-complete --stack-name $stack_name
-        success "Stack deletada com sucesso!"
+        
+        if [ $? -eq 0 ]; then
+            success "Stack deletada com sucesso!"
+            
+            # Limpar arquivo local de informações da chave SSH se existir
+            if [ -f ".ssh-key-info" ]; then
+                rm -f .ssh-key-info
+                log "Arquivo .ssh-key-info removido"
+            fi
+            
+            echo -e "\n${GREEN}✨ Limpeza completa realizada!${NC}"
+        else
+            error "Erro ao aguardar conclusão da deleção"
+        fi
     else
         error "Erro ao deletar stack"
     fi
@@ -293,6 +369,45 @@ cost_report() {
     echo "• Delete a stack ao final do curso"
 }
 
+# Função para listar buckets S3 do curso
+list_s3_buckets() {
+    log "Buscando buckets S3 do curso..."
+    
+    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    
+    echo -e "\n${YELLOW}📦 Buckets S3 relacionados ao curso:${NC}"
+    
+    # Listar todos os buckets
+    ALL_BUCKETS=$(aws s3api list-buckets --query 'Buckets[].Name' --output text)
+    
+    for bucket in $ALL_BUCKETS; do
+        if [[ $bucket == *"curso"* ]] || [[ $bucket == *"documentdb"* ]] || [[ $bucket == *"keys"* ]]; then
+            echo -e "\n${BLUE}Bucket: ${bucket}${NC}"
+            
+            # Obter tamanho do bucket
+            SIZE=$(aws s3 ls "s3://${bucket}" --recursive --summarize 2>/dev/null | grep "Total Size" | awk '{print $3}')
+            OBJECTS=$(aws s3 ls "s3://${bucket}" --recursive --summarize 2>/dev/null | grep "Total Objects" | awk '{print $3}')
+            
+            if [ ! -z "$SIZE" ]; then
+                SIZE_MB=$(echo "scale=2; $SIZE / 1024 / 1024" | bc)
+                echo "  Tamanho: ${SIZE_MB} MB"
+                echo "  Objetos: ${OBJECTS}"
+            else
+                echo "  Bucket vazio"
+            fi
+            
+            # Listar objetos
+            echo "  Objetos:"
+            aws s3 ls "s3://${bucket}" --recursive --human-readable | head -10
+            
+            TOTAL=$(aws s3 ls "s3://${bucket}" --recursive | wc -l)
+            if [ $TOTAL -gt 10 ]; then
+                echo "  ... e mais $(($TOTAL - 10)) objetos"
+            fi
+        fi
+    done
+}
+
 # Menu principal
 show_menu() {
     echo -e "\n${YELLOW}Escolha uma opção:${NC}"
@@ -302,8 +417,9 @@ show_menu() {
     echo "4. Parar instâncias"
     echo "5. Iniciar instâncias"
     echo "6. Relatório de custos"
-    echo "7. Deletar stack (CUIDADO!)"
-    echo "8. Sair"
+    echo "7. Listar buckets S3 do curso"
+    echo "8. Deletar stack (CUIDADO!)"
+    echo "9. Sair"
     echo ""
 }
 
@@ -338,10 +454,13 @@ while true; do
             cost_report "$stack_name"
             ;;
         7)
+            list_s3_buckets
+            ;;
+        8)
             read -p "Nome da stack: " stack_name
             cleanup_stack "$stack_name"
             ;;
-        8)
+        9)
             success "Até logo!"
             exit 0
             ;;
