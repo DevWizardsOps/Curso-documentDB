@@ -323,6 +323,43 @@ force_cleanup_resources() {
         success "Usuários IAM deletados"
     fi
     
+    # 5. Deletar IAM Groups e Políticas Inline
+    log "Procurando grupos IAM da stack..."
+    IAM_GROUPS=$(aws iam list-groups \
+        --query "Groups[?contains(GroupName, '$stack_name')].GroupName" \
+        --output text 2>/dev/null)
+    
+    if [ ! -z "$IAM_GROUPS" ]; then
+        for group in $IAM_GROUPS; do
+            warning "Deletando grupo IAM: $group"
+            
+            # Remover políticas inline do grupo
+            INLINE_POLICIES=$(aws iam list-group-policies --group-name $group --query 'PolicyNames[]' --output text 2>/dev/null)
+            for policy in $INLINE_POLICIES; do
+                log "Removendo política inline: $policy"
+                aws iam delete-group-policy --group-name $group --policy-name $policy 2>/dev/null || true
+            done
+            
+            # Remover políticas gerenciadas anexadas
+            ATTACHED_POLICIES=$(aws iam list-attached-group-policies --group-name $group --query 'AttachedPolicies[].PolicyArn' --output text 2>/dev/null)
+            for policy_arn in $ATTACHED_POLICIES; do
+                log "Desanexando política gerenciada: $policy_arn"
+                aws iam detach-group-policy --group-name $group --policy-arn $policy_arn 2>/dev/null || true
+            done
+            
+            # Remover usuários do grupo
+            GROUP_USERS=$(aws iam get-group --group-name $group --query 'Users[].UserName' --output text 2>/dev/null)
+            for user in $GROUP_USERS; do
+                log "Removendo usuário $user do grupo"
+                aws iam remove-user-from-group --group-name $group --user-name $user 2>/dev/null || true
+            done
+            
+            # Deletar grupo
+            aws iam delete-group --group-name $group 2>/dev/null || true
+        done
+        success "Grupos IAM deletados"
+    fi
+    
     success "Limpeza forçada concluída"
 }
 
