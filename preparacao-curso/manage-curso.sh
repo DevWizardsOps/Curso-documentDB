@@ -628,6 +628,203 @@ list_s3_buckets() {
     done
 }
 
+# Função para limpar recursos criados manualmente nos labs
+cleanup_lab_resources() {
+    local stack_name=$1
+    
+    if [ -z "$stack_name" ]; then
+        error "Nome da stack não fornecido"
+        return 1
+    fi
+    
+    # Arrays para rastrear falhas
+    declare -a FAILED_RESOURCES
+    declare -a SUCCESS_RESOURCES
+    
+    # Obter prefixo dos alunos da stack
+    log "Obtendo informações da stack..."
+    local num_alunos=$(aws cloudformation describe-stacks \
+        --stack-name $stack_name \
+        --query 'Stacks[0].Parameters[?ParameterKey==`NumeroAlunos`].ParameterValue' \
+        --output text 2>/dev/null)
+    
+    local prefixo=$(aws cloudformation describe-stacks \
+        --stack-name $stack_name \
+        --query 'Stacks[0].Parameters[?ParameterKey==`PrefixoAluno`].ParameterValue' \
+        --output text 2>/dev/null)
+    
+    if [ -z "$num_alunos" ] || [ "$num_alunos" = "None" ]; then
+        num_alunos=20  # Default
+    fi
+    
+    if [ -z "$prefixo" ] || [ "$prefixo" = "None" ]; then
+        prefixo="aluno"  # Default
+    fi
+    
+    log "Limpando recursos para $num_alunos alunos com prefixo '$prefixo'..."
+    
+    # Para cada aluno
+    for i in $(seq 1 $num_alunos); do
+        local aluno_num=$(printf "%02d" $i)
+        local aluno_id="${prefixo}${aluno_num}"
+        
+        echo -e "\n${BLUE}Limpando recursos do $aluno_id...${NC}"
+        
+        # 1. Deletar clusters DocumentDB
+        for cluster_pattern in "${aluno_id}-lab-cluster-console" "${aluno_id}-lab-cluster-terraform" "${aluno_id}-lab-cluster-restored" "${aluno_id}-lab-cluster-pitr" "${aluno_id}-lab-cluster-rollback"; do
+            if aws docdb describe-db-clusters --db-cluster-identifier "$cluster_pattern" &> /dev/null; then
+                warning "Deletando cluster: $cluster_pattern"
+                
+                # Deletar instâncias primeiro
+                local instances=$(aws docdb describe-db-clusters \
+                    --db-cluster-identifier "$cluster_pattern" \
+                    --query 'DBClusters[0].DBClusterMembers[].DBInstanceIdentifier' \
+                    --output text 2>/dev/null)
+                
+                for instance in $instances; do
+                    log "Deletando instância: $instance"
+                    aws docdb delete-db-instance \
+                        --db-instance-identifier "$instance" 2>/dev/null || true
+                done
+                
+                # Aguardar instâncias serem deletadas
+                sleep 5
+                
+                # Deletar cluster
+                aws docdb delete-db-cluster \
+                    --db-cluster-identifier "$cluster_pattern" \
+                    --skip-final-snapshot 2>/dev/null || true
+                
+                success "Cluster $cluster_pattern deletado"
+            fi
+        done
+        
+        # 2. Deletar snapshots manuais
+        local snapshots=$(aws docdb describe-db-cluster-snapshots \
+            --snapshot-type manual \
+            --query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '$aluno_id')].DBClusterSnapshotIdentifier" \
+            --output text 2>/dev/null)
+        
+        for snapshot in $snapshots; do
+            if [ -n "$snapshot" ] && [ "$snapshot" != "None" ]; then
+                warning "Deletando snapshot: $snapshot"
+                aws docdb delete-db-cluster-snapshot \
+                    --db-cluster-snapshot-identifier "$snapshot" 2>/dev/null || true
+            fi
+        done
+        
+        # 3. Deletar parameter groups customizados
+        local param_groups=$(aws docdb describe-db-cluster-parameter-groups \
+            --query "DBClusterParameterGroups[?starts_with(DBClusterParameterGroupName, '$aluno_id')].DBClusterParameterGroupName" \
+            --output text 2>/dev/null)
+        
+        for pg in $param_groups; do
+            if [ -n "$pg" ] && [ "$pg" != "None" ]; then
+                warning "Deletando parameter group: $pg"
+                aws docdb delete-db-cluster-parameter-group \
+                    --db-cluster-parameter-group-name "$pg" 2>/dev/null || true
+            fi
+        done
+        
+        # 4. Deletar subnet groups
+        for subnet_pattern in "${aluno_id}-docdb-lab-subnet-group"; do
+            if aws docdb describe-db-subnet-groups --db-subnet-group-name "$subnet_pattern" &> /dev/null; then
+                warning "Deletando subnet group: $subnet_pattern"
+                aws docdb delete-db-subnet-group \
+                    --db-subnet-group-name "$subnet_pattern" 2>/dev/null || true
+                success "Subnet group $subnet_pattern deletado"
+            fi
+        done
+        
+        # 5. Deletar security groups (aguardar clusters serem deletados)
+        sleep 10
+        
+        for sg_pattern in "${aluno_id}-docdb-lab-sg" "${aluno_id}-app-client-sg"; do
+            local sg_id=$(aws ec2 describe-security-groups \
+                --filters "Name=group-name,Values=$sg_pattern" \
+                --query 'SecurityGroups[0].GroupId' \
+                --output text 2>/dev/null)
+            
+            if [ -n "$sg_id" ] && [ "$sg_id" != "None" ]; then
+                warning "Deletando security group: $sg_pattern ($sg_id)"
+                aws ec2 delete-security-group --group-id "$sg_id" 2>/dev/null || warning "Não foi possível deletar $sg_pattern (pode estar em uso)"
+            fi
+        done
+        
+        # 6. Deletar dashboards CloudWatch
+        for dashboard_pattern in "${aluno_id}-DocumentDB-Dashboard" "${aluno_id}-DocumentDB-Dashboard-ByAWSCli" "${aluno_id}-Performance-Tuning-Dashboard-byAWSCLI"; do
+            if aws cloudwatch get-dashboard --dashboard-name "$dashboard_pattern" &> /dev/null; then
+                warning "Deletando dashboard: $dashboard_pattern"
+                aws cloudwatch delete-dashboards --dashboard-names "$dashboard_pattern" 2>/dev/null || true
+            fi
+        done
+        
+        # 7. Deletar alarmes CloudWatch
+        local alarms=$(aws cloudwatch describe-alarms \
+            --query "MetricAlarms[?starts_with(AlarmName, '$aluno_id')].AlarmName" \
+            --output text 2>/dev/null)
+        
+        for alarm in $alarms; do
+            if [ -n "$alarm" ] && [ "$alarm" != "None" ]; then
+                warning "Deletando alarme: $alarm"
+                aws cloudwatch delete-alarms --alarm-names "$alarm" 2>/dev/null || true
+            fi
+        done
+        
+        # 8. Deletar regras EventBridge
+        local rules=$(aws events list-rules \
+            --query "Rules[?starts_with(Name, '$aluno_id')].Name" \
+            --output text 2>/dev/null)
+        
+        for rule in $rules; do
+            if [ -n "$rule" ] && [ "$rule" != "None" ]; then
+                warning "Deletando regra EventBridge: $rule"
+                # Remover targets primeiro
+                local targets=$(aws events list-targets-by-rule --rule "$rule" --query 'Targets[].Id' --output text 2>/dev/null)
+                if [ -n "$targets" ]; then
+                    aws events remove-targets --rule "$rule" --ids $targets 2>/dev/null || true
+                fi
+                aws events delete-rule --name "$rule" 2>/dev/null || true
+            fi
+        done
+        
+        # 9. Deletar tópicos SNS
+        local topics=$(aws sns list-topics \
+            --query "Topics[?contains(TopicArn, '$aluno_id')].TopicArn" \
+            --output text 2>/dev/null)
+        
+        for topic in $topics; do
+            if [ -n "$topic" ] && [ "$topic" != "None" ]; then
+                warning "Deletando tópico SNS: $topic"
+                aws sns delete-topic --topic-arn "$topic" 2>/dev/null || true
+            fi
+        done
+        
+        # 10. Deletar log groups CloudWatch
+        for log_pattern in "/aws/docdb/${aluno_id}-lab-cluster-console/audit"; do
+            if aws logs describe-log-groups --log-group-name-prefix "$log_pattern" &> /dev/null; then
+                warning "Deletando log group: $log_pattern"
+                aws logs delete-log-group --log-group-name "$log_pattern" 2>/dev/null || true
+            fi
+        done
+        
+        # 11. Deletar buckets S3 de backup
+        local backup_buckets=$(aws s3 ls | grep "${aluno_id}-docdb-backups" | awk '{print $3}')
+        for bucket in $backup_buckets; do
+            if [ -n "$bucket" ]; then
+                warning "Deletando bucket S3: $bucket"
+                aws s3 rm "s3://${bucket}" --recursive 2>/dev/null || true
+                aws s3 rb "s3://${bucket}" 2>/dev/null || true
+            fi
+        done
+    done
+    
+    echo -e "\n${GREEN}✨ Limpeza de recursos dos labs concluída!${NC}"
+    echo ""
+    echo -e "${YELLOW}💡 Nota:${NC} Alguns recursos podem não ter sido deletados se ainda estiverem em uso."
+    echo "Aguarde alguns minutos e tente novamente se necessário."
+}
+
 # Menu principal
 show_menu() {
     echo -e "\n${YELLOW}Escolha uma opção:${NC}"
@@ -640,7 +837,8 @@ show_menu() {
     echo "7. Listar buckets S3 do curso"
     echo "8. Deletar stack (CUIDADO!)"
     echo "9. Deletar stack com FORCE (recursos manuais primeiro)"
-    echo "10. Sair"
+    echo "10. Limpar recursos criados nos labs (clusters, SGs, etc.)"
+    echo "11. Sair"
     echo ""
 }
 
@@ -686,6 +884,10 @@ while true; do
             cleanup_stack "$stack_name" "force"
             ;;
         10)
+            read -p "Nome da stack: " stack_name
+            cleanup_lab_resources "$stack_name"
+            ;;
+        11)
             success "Até logo!"
             exit 0
             ;;
