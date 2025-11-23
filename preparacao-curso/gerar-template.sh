@@ -465,7 +465,8 @@ for i in $(seq 1 $NUM_ALUNOS); do
             echo "    cat ~/BEM-VINDO.txt" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             echo "    touch ~/.welcome_shown" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             echo "fi" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "export ID=${PrefixoAluno}${ALUNO_NUM}' >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "export ID=\${PrefixoAluno}${ALUNO_NUM}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/
             
