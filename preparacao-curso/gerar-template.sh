@@ -138,9 +138,34 @@ Resources:
                 Action: 'docdb-elastic:*'
                 Resource: '*'
               
-              # RDS - Acesso completo (DocumentDB tradicional usa namespace RDS)
+              # RDS - Operações que NÃO precisam de restrição de classe
               - Effect: Allow
-                Action: 'rds:*'
+                Action:
+                  - 'rds:Describe*'
+                  - 'rds:List*'
+                  - 'rds:CreateDBSubnetGroup'
+                  - 'rds:DeleteDBSubnetGroup'
+                  - 'rds:ModifyDBSubnetGroup'
+                  - 'rds:AddTagsToResource'
+                  - 'rds:RemoveTagsFromResource'
+                  - 'rds:CreateDBClusterParameterGroup'
+                  - 'rds:DeleteDBClusterParameterGroup'
+                  - 'rds:ModifyDBClusterParameterGroup'
+                  - 'rds:CreateDBParameterGroup'
+                  - 'rds:DeleteDBParameterGroup'
+                  - 'rds:ModifyDBParameterGroup'
+                  - 'rds:CopyDBClusterSnapshot'
+                  - 'rds:DeleteDBClusterSnapshot'
+                  - 'rds:RestoreDBClusterFromSnapshot'
+                Resource: '*'
+              
+              # RDS - Operações de criação de clusters/instâncias COM restrição de classe
+              - Effect: Allow
+                Action:
+                  - 'rds:CreateDBCluster'
+                  - 'rds:CreateDBInstance'
+                  - 'rds:ModifyDBCluster'
+                  - 'rds:ModifyDBInstance'
                 Resource: '*'
                 Condition:
                   StringLike:
@@ -151,11 +176,11 @@ Resources:
                       - 'db.r5.large'
                       - 'db.r5.xlarge'
               
-              # RDS - Operações de leitura sem restrições
+              # RDS - Operações de deleção sem restrições
               - Effect: Allow
                 Action:
-                  - 'rds:Describe*'
-                  - 'rds:List*'
+                  - 'rds:DeleteDBCluster'
+                  - 'rds:DeleteDBInstance'
                 Resource: '*'
               
               # EC2 - Consultas e gerenciamento (sem restrições de leitura)

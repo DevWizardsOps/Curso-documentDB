@@ -217,22 +217,59 @@ Resource: '*'
 
 ---
 
-### 9. RDS - Comandos Alias do DocumentDB
+### 9. RDS - DocumentDB (usa namespace RDS)
+
+**IMPORTANTE**: DocumentDB tradicional usa o namespace `rds:*` para todas as operações, não `docdb:*`.
 
 ```yaml
+# Operações sem restrição de classe de instância:
 Actions:
-  - rds:DescribeDBClusters
-  - rds:DescribeDBInstances
-  - rds:DescribeDBClusterSnapshots
-  - rds:DescribeDBSnapshots
-  - rds:ListTagsForResource
+  - rds:Describe*
+  - rds:List*
+  - rds:CreateDBSubnetGroup
+  - rds:DeleteDBSubnetGroup
+  - rds:ModifyDBSubnetGroup
+  - rds:AddTagsToResource
+  - rds:RemoveTagsFromResource
+  - rds:CreateDBClusterParameterGroup
+  - rds:DeleteDBClusterParameterGroup
+  - rds:ModifyDBClusterParameterGroup
+  - rds:CopyDBClusterSnapshot
+  - rds:DeleteDBClusterSnapshot
+  - rds:RestoreDBClusterFromSnapshot
+Resource: '*'
+
+# Operações COM restrição de classe (apenas instâncias t3 e r5):
+Actions:
+  - rds:CreateDBCluster
+  - rds:CreateDBInstance
+  - rds:ModifyDBCluster
+  - rds:ModifyDBInstance
+Resource: '*'
+Condition:
+  StringLike:
+    rds:DatabaseClass:
+      - db.t3.medium
+      - db.t3.large
+      - db.t3.xlarge
+      - db.r5.large
+      - db.r5.xlarge
+
+# Operações de deleção sem restrições:
+Actions:
+  - rds:DeleteDBCluster
+  - rds:DeleteDBInstance
 Resource: '*'
 ```
 
-**Justificativa**: Alguns comandos AWS CLI usam o namespace `rds` para DocumentDB.
+**Justificativa**: DocumentDB tradicional usa completamente o namespace RDS. As permissões são separadas em três grupos:
+1. Operações que não envolvem classe de instância (subnet groups, parameter groups, snapshots, describe/list)
+2. Operações de criação/modificação com restrição de classe para controle de custos
+3. Operações de deleção sem restrições
 
 **Módulos que usam**:
-- Todos os módulos (comandos CLI alternativos)
+- Módulo 2, Exercício 1: Criar DB Subnet Groups e clusters DocumentDB
+- Todos os módulos: Gerenciamento completo de DocumentDB
 
 ---
 

@@ -213,14 +213,49 @@ Resources:
                   - 'sns:Publish'
                 Resource: '*'
               
-              # RDS - Alias para DocumentDB (alguns comandos usam namespace rds)
+              # RDS - Operações que NÃO precisam de restrição de classe
               - Effect: Allow
                 Action:
-                  - 'rds:DescribeDBClusters'
-                  - 'rds:DescribeDBInstances'
-                  - 'rds:DescribeDBClusterSnapshots'
-                  - 'rds:DescribeDBSnapshots'
-                  - 'rds:ListTagsForResource'
+                  - 'rds:Describe*'
+                  - 'rds:List*'
+                  - 'rds:CreateDBSubnetGroup'
+                  - 'rds:DeleteDBSubnetGroup'
+                  - 'rds:ModifyDBSubnetGroup'
+                  - 'rds:AddTagsToResource'
+                  - 'rds:RemoveTagsFromResource'
+                  - 'rds:CreateDBClusterParameterGroup'
+                  - 'rds:DeleteDBClusterParameterGroup'
+                  - 'rds:ModifyDBClusterParameterGroup'
+                  - 'rds:CreateDBParameterGroup'
+                  - 'rds:DeleteDBParameterGroup'
+                  - 'rds:ModifyDBParameterGroup'
+                  - 'rds:CopyDBClusterSnapshot'
+                  - 'rds:DeleteDBClusterSnapshot'
+                  - 'rds:RestoreDBClusterFromSnapshot'
+                Resource: '*'
+              
+              # RDS - Operações de criação de clusters/instâncias COM restrição de classe
+              - Effect: Allow
+                Action:
+                  - 'rds:CreateDBCluster'
+                  - 'rds:CreateDBInstance'
+                  - 'rds:ModifyDBCluster'
+                  - 'rds:ModifyDBInstance'
+                Resource: '*'
+                Condition:
+                  StringLike:
+                    'rds:DatabaseClass':
+                      - 'db.t3.medium'
+                      - 'db.t3.large'
+                      - 'db.t3.xlarge'
+                      - 'db.r5.large'
+                      - 'db.r5.xlarge'
+              
+              # RDS - Operações de deleção sem restrições
+              - Effect: Allow
+                Action:
+                  - 'rds:DeleteDBCluster'
+                  - 'rds:DeleteDBInstance'
                 Resource: '*'
               
               # STS - Identificacao do usuario
