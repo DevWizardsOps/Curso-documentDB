@@ -138,6 +138,11 @@ Resources:
                 Action: 'docdb:*'
                 Resource: '*'
               
+              # DocumentDB Elastic - Acesso completo (serviço elastic clusters)
+              - Effect: Allow
+                Action: 'docdb-elastic:*'
+                Resource: '*'
+              
               # RDS - Acesso completo exceto criação de instâncias (DocumentDB usa namespace RDS)
               - Effect: Allow
                 Action: 'rds:*'
