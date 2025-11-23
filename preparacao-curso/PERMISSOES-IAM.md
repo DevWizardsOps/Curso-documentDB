@@ -237,13 +237,14 @@ Actions:
   - rds:CopyDBClusterSnapshot
   - rds:DeleteDBClusterSnapshot
   - rds:RestoreDBClusterFromSnapshot
+  - rds:CreateDBCluster      # Cluster não tem classe, só instâncias
+  - rds:DeleteDBCluster
+  - rds:ModifyDBCluster
 Resource: '*'
 
 # Operações COM restrição de classe (apenas instâncias t3 e r5):
 Actions:
-  - rds:CreateDBCluster
-  - rds:CreateDBInstance
-  - rds:ModifyDBCluster
+  - rds:CreateDBInstance     # Instâncias têm classe
   - rds:ModifyDBInstance
 Resource: '*'
 Condition:
@@ -255,17 +256,17 @@ Condition:
       - db.r5.large
       - db.r5.xlarge
 
-# Operações de deleção sem restrições:
+# Operações de deleção de instâncias sem restrições:
 Actions:
-  - rds:DeleteDBCluster
   - rds:DeleteDBInstance
 Resource: '*'
 ```
 
-**Justificativa**: DocumentDB tradicional usa completamente o namespace RDS. As permissões são separadas em três grupos:
-1. Operações que não envolvem classe de instância (subnet groups, parameter groups, snapshots, describe/list)
-2. Operações de criação/modificação com restrição de classe para controle de custos
-3. Operações de deleção sem restrições
+**Justificativa**: DocumentDB tradicional usa completamente o namespace RDS. As permissões são separadas em dois grupos:
+1. **Operações sem restrição**: Clusters (não têm classe), subnet groups, parameter groups, snapshots, describe/list
+2. **Operações com restrição de classe**: Apenas criação/modificação de **instâncias** (que têm classe) para controle de custos
+
+**Nota Importante**: No DocumentDB, você primeiro cria o **cluster** (sem classe) e depois adiciona **instâncias** ao cluster (com classe específica). A condição `rds:DatabaseClass` só se aplica a instâncias, não a clusters.
 
 **Módulos que usam**:
 - Módulo 2, Exercício 1: Criar DB Subnet Groups e clusters DocumentDB

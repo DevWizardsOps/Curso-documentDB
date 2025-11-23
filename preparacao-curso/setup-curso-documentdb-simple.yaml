@@ -232,14 +232,15 @@ Resources:
                   - 'rds:CopyDBClusterSnapshot'
                   - 'rds:DeleteDBClusterSnapshot'
                   - 'rds:RestoreDBClusterFromSnapshot'
+                  - 'rds:CreateDBCluster'
+                  - 'rds:DeleteDBCluster'
+                  - 'rds:ModifyDBCluster'
                 Resource: '*'
               
-              # RDS - Operações de criação de clusters/instâncias COM restrição de classe
+              # RDS - Criação de instâncias COM restrição de classe (controle de custos)
               - Effect: Allow
                 Action:
-                  - 'rds:CreateDBCluster'
                   - 'rds:CreateDBInstance'
-                  - 'rds:ModifyDBCluster'
                   - 'rds:ModifyDBInstance'
                 Resource: '*'
                 Condition:
@@ -251,10 +252,9 @@ Resources:
                       - 'db.r5.large'
                       - 'db.r5.xlarge'
               
-              # RDS - Operações de deleção sem restrições
+              # RDS - Deleção de instâncias sem restrições
               - Effect: Allow
                 Action:
-                  - 'rds:DeleteDBCluster'
                   - 'rds:DeleteDBInstance'
                 Resource: '*'
               
