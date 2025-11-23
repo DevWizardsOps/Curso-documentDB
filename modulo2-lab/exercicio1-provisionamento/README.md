@@ -69,6 +69,10 @@
 3. Clique em **Create cluster**
 4. Aguarde ~15-20 minutos para provisionamento
 
+## Conecte via SSH na sua instância EC2
+
+[➡️ Apoio SSH](../apoio-alunos/README.md)
+
 ### Passo 4: Verificar o Cluster
 
 ```bash
