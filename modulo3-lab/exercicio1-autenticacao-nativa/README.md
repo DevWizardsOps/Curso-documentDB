@@ -25,9 +25,6 @@ Neste exercício, vamos implementar autenticação segura no Amazon DocumentDB a
 **Objetivo:** Definir o mesmo ID usado no Módulo 2 para localizar o cluster correto.
 
 ```bash
-# Substitua pelo mesmo ID usado no Módulo 2
-export ID="seu-id"  # Exemplo: "aluno01", "aluno02", "aluno03", etc.
-
 # Verificar se o cluster existe
 aws docdb describe-db-clusters --db-cluster-identifier $ID-lab-cluster-console --query 'DBClusters[0].[DBClusterIdentifier,Status,Endpoint]' --output table
 ```
@@ -47,9 +44,6 @@ aws docdb describe-db-clusters --db-cluster-identifier $ID-lab-cluster-console -
 
 **Via AWS CLI:**
 ```bash
-# Definir seu ID único (substitua pelo mesmo usado no Módulo 2)
-export ID="seu-nome"  # Exemplo: "aluno01", "aluno02", etc.
-
 # Listar clusters disponíveis
 aws docdb describe-db-clusters --query "DBClusters[*].[DBClusterIdentifier,Endpoint,Port,MasterUsername]" --output table
 
@@ -227,15 +221,10 @@ db.logs.find()
 Execute o script fornecido para automatizar a criação de usuários:
 
 ```bash
-# Configurar seu ID (mesmo do Módulo 2)
-export ID="seu-nome"
-
 # Executar script
-chmod +x scripts/create_user.sh
 ./scripts/create_user.sh
 
 # Testar conexões
-chmod +x scripts/test_connection.sh
 ./scripts/test_connection.sh
 ```
 
@@ -245,7 +234,7 @@ Execute o script de validação para verificar automaticamente se o exercício f
 
 ```bash
 # Executa o grade para avaliar atividades
-./grade_exercicio1.sh
+/home/aluno01/Curso-documentDB/modulo3-lab/exercicio1-autenticacao-nativa/grade_exercicio1.sh
 ```
 
 ### Validação Automatizada
@@ -253,12 +242,8 @@ Execute o script de validação para verificar automaticamente se o exercício f
 Execute o script de validação para verificar automaticamente se o exercício foi concluído:
 
 ```bash
-# Configurar seu ID (mesmo do Módulo 2)
-export ID="seu-nome"
-
 # Executar validação
-chmod +x grade_exercicio1.sh
-./grade_exercicio1.sh
+/home/aluno01/Curso-documentDB/modulo3-lab/exercicio1-autenticacao-nativa/grade_exercicio1.sh
 
 # Ou passar o ID diretamente
 ./grade_exercicio1.sh "seu-nome"

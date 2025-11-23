@@ -52,11 +52,15 @@ check_aws_cli() {
 
 # Função para obter o ID do aluno
 get_student_id() {
-    if [ -z "$1" ]; then
+    # Usar variável de ambiente $ID se estiver definida
+    if [ -n "$ID" ]; then
+        STUDENT_ID="$ID"
+        echo -e "${BLUE}Usando ID do ambiente: ${STUDENT_ID}${NC}"
+    elif [ -n "$1" ]; then
+        STUDENT_ID="$1"
+    else
         echo -e "${YELLOW}Por favor, informe seu ID de aluno:${NC}"
         read -p "ID do aluno: " STUDENT_ID
-    else
-        STUDENT_ID=$1
     fi
     
     if [ -z "$STUDENT_ID" ]; then

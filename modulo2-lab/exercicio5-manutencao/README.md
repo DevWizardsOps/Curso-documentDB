@@ -125,7 +125,7 @@ aws docdb restore-db-cluster-from-snapshot \
 
 ```bash
 # Executa o grade para avaliar atividades
-./grade_exercicio5.sh
+/home/aluno01/Curso-documentDB/modulo2-lab/exercicio5-manutencao/grade_exercicio5.sh
 ```
 
 ---

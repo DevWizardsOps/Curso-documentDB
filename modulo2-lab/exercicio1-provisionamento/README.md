@@ -103,7 +103,7 @@ mongosh --host $ENDPOINT:27017 \
 --username docdbadmin \
 --password Lab12345! \
 --tls \
---tlsCAFile global-bundle.pem
+--tlsCAFile ~/global-bundle.pem
 ```
 
 ---
@@ -176,7 +176,7 @@ mongosh --host $ENDPOINT:27017 \
 --username docdbadmin \
 --password Lab12345! \
 --tls \
---tlsCAFile ../global-bundle.pem
+--tlsCAFile ~/global-bundle.pem
 ```
 
 ---
@@ -201,7 +201,7 @@ Execute o script de validação a partir do diretório home do usuário, dentro 
 
 ```bash
 # Executa o grade para avaliar atividades
-./grade_exercicio1.sh
+/home/aluno01/Curso-documentDB/modulo2-lab/exercicio1-provisionamento/grade_exercicio1.sh
 ```
 
 ---

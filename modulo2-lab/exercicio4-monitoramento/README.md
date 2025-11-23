@@ -213,7 +213,7 @@ Execute o script de validação a partir do diretório home do usuário, no dire
 
 ```bash
 # Executa o grade para avaliar atividades
-./grade_exercicio4.sh
+/home/aluno01/Curso-documentDB/modulo2-lab/exercicio4-monitoramento/grade_exercicio4.sh
 ```
 
 ---

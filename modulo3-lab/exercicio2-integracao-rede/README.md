@@ -127,9 +127,6 @@ O Amazon DocumentDB foi projetado para ser um serviço **exclusivamente privado*
 ### 0. Configurar Identificador e Obter Informações do Cluster
 
 ```bash
-# Definir seu ID (mesmo do Módulo 2)
-export ID="seu-nome"
-
 # Obter informações do cluster
 aws docdb describe-db-clusters \
   --db-cluster-identifier "$ID-lab-cluster-console" \
@@ -406,7 +403,9 @@ echo "Criando Bastion Host para acesso ao DocumentDB..."
 # Testar conectividade de rede
 echo "Testando conectividade de rede..."
 
-INSTANCE_ID=i-0889bcec872ae848c
+# Obter o Instance ID da sua instância EC2 automaticamente
+INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+echo "Instance ID detectado: $INSTANCE_ID"
 
 # Obter endpoint do cluster
 CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \

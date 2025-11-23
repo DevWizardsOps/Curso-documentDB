@@ -51,11 +51,15 @@ check_aws_cli() {
 
 # Função para obter o ID do aluno
 get_student_id() {
-    if [ -z "$1" ]; then
+    # Usar variável de ambiente $ID se estiver definida
+    if [ -n "$ID" ]; then
+        STUDENT_ID="$ID"
+        echo -e "${BLUE}Usando ID do ambiente: ${STUDENT_ID}${NC}"
+    elif [ -n "$1" ]; then
+        STUDENT_ID="$1"
+    else
         echo -e "${YELLOW}Por favor, informe seu ID de aluno:${NC}"
         read -p "ID do aluno: " STUDENT_ID
-    else
-        STUDENT_ID=$1
     fi
     
     if [ -z "$STUDENT_ID" ]; then
@@ -216,13 +220,22 @@ check_connectivity() {
     if [ -n "$console_endpoint" ] && [ "$console_endpoint" != "None" ] || \
        [ -n "$terraform_endpoint" ] && [ "$terraform_endpoint" != "None" ]; then
         
-        echo -e "${YELLOW}Digite a senha do DocumentDB (docdbadmin) para testar conectividade:${NC}"
-        read -s -p "Senha: " db_password
+        # Usar senha padrão ou solicitar
+        local db_password="Lab12345!"
+        
+        echo -e "${YELLOW}Testando conectividade com senha padrão (Lab12345!)${NC}"
+        echo -e "${YELLOW}Se a senha for diferente, pressione Enter e digite a senha correta:${NC}"
+        read -s -p "Senha (Enter para usar padrão): " custom_password
         echo
         
-        if [ -z "$db_password" ]; then
-            print_result "WARN" "Senha não fornecida - pulando testes de conectividade"
+        if [ -n "$custom_password" ]; then
+            db_password="$custom_password"
+            echo -e "${BLUE}Usando senha customizada${NC}"
         else
+            echo -e "${BLUE}Usando senha padrão${NC}"
+        fi
+        
+        if [ -n "$db_password" ]; then
             # Testar cluster Console
             if [ -n "$console_endpoint" ] && [ "$console_endpoint" != "None" ]; then
                 if timeout 10 mongosh --host "${console_endpoint}:27017" \

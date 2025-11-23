@@ -37,7 +37,6 @@ Execute o script para enviar métricas de exemplo ao CloudWatch:
 
 ```bash
 # Configurar variáveis de ambiente
-export ID="<seu-id>"
 export CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].Endpoint' \

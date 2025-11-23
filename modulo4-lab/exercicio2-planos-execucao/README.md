@@ -41,7 +41,6 @@ cd exercicio2-planos-execucao
 wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 
 # Configurar variáveis de ambiente
-export ID="<seu-id>"
 export CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].Endpoint' \
@@ -290,7 +289,6 @@ node scripts/explain-analyzer.js --collection products
 
 ```bash
 # Configurar variáveis de ambiente
-export ID="<seu-id>"
 export CLUSTER_ENDPOINT=$(aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].Endpoint' \

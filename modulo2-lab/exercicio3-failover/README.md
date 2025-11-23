@@ -180,7 +180,7 @@ Execute o script de validação a partir do diretório home do usuário, no dire
 
 ```bash
 # Executa o grade para avaliar atividades
-./grade_exercicio3.sh
+/home/aluno01/Curso-documentDB/modulo2-lab/exercicio3-failover/grade_exercicio3.sh
 ```
 
 ---
