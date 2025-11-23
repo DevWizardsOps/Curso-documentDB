@@ -133,17 +133,12 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              # DocumentDB - Acesso completo (sem restrições para ambiente de treinamento)
-              - Effect: Allow
-                Action: 'docdb:*'
-                Resource: '*'
-              
               # DocumentDB Elastic - Acesso completo (serviço elastic clusters)
               - Effect: Allow
                 Action: 'docdb-elastic:*'
                 Resource: '*'
               
-              # RDS - Acesso completo exceto criação de instâncias (DocumentDB usa namespace RDS)
+              # RDS - Acesso completo (DocumentDB tradicional usa namespace RDS)
               - Effect: Allow
                 Action: 'rds:*'
                 Resource: '*'
@@ -407,7 +402,8 @@ for i in $(seq 1 $NUM_ALUNOS); do
               git clone https://github.com/DevWizardsOps/Curso-documentDB.git
             sudo -u \${PrefixoAluno}${ALUNO_NUM} \
               rm -fr /home/\${PrefixoAluno}${ALUNO_NUM}/Curso-documentDB/preparacao-curso
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} echo 'export ID=${PrefixoAluno}${ALUNO_NUM}' >> /home/${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo -u \${PrefixoAluno}${ALUNO_NUM} \
+              timedatectl set-timezone America/Recife
             
             # Criar arquivo de boas-vindas (usando echo para evitar problemas com heredoc)
             echo "╔══════════════════════════════════════════════════════════════╗" > /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
@@ -444,6 +440,7 @@ for i in $(seq 1 $NUM_ALUNOS); do
             echo "    cat ~/BEM-VINDO.txt" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             echo "    touch ~/.welcome_shown" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             echo "fi" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            echo "export ID=${PrefixoAluno}${ALUNO_NUM}' >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
             chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/
             
