@@ -71,7 +71,7 @@
 
 ## Conecte via SSH na sua instância EC2
 
-[➡️ Apoio SSH](../apoio-alunos/README.md)
+[➡️ Apoio SSH](../../apoio-alunos/README.md)
 
 ### Passo 4: Verificar o Cluster
 
