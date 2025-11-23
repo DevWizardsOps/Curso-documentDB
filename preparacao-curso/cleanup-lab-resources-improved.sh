@@ -13,101 +13,178 @@ cleanup_lab_resources() {
     declare -a FAILED_RESOURCES
     declare -a SUCCESS_RESOURCES
     
-    # Obter parâmetros da stack
+    # Obter prefixo da stack
     log "Obtendo informações da stack..."
-    local num_alunos=$(aws cloudformation describe-stacks \
-        --stack-name $stack_name \
-        --query 'Stacks[0].Parameters[?ParameterKey==`NumeroAlunos`].ParameterValue' \
-        --output text 2>/dev/null)
-    
     local prefixo=$(aws cloudformation describe-stacks \
         --stack-name $stack_name \
         --query 'Stacks[0].Parameters[?ParameterKey==`PrefixoAluno`].ParameterValue' \
         --output text 2>/dev/null)
     
-    if [ -z "$num_alunos" ] || [ "$num_alunos" = "None" ]; then
-        num_alunos=20
-    fi
-    
     if [ -z "$prefixo" ] || [ "$prefixo" = "None" ]; then
         prefixo="aluno"
     fi
     
-    # FASE 1: LISTAR RECURSOS
+    log "Buscando recursos com prefixo: ${prefixo}*"
+    
+    # FASE 1: LISTAR RECURSOS (descoberta dinâmica)
     echo -e "\n${BLUE}═══════════════════════════════════════════════${NC}"
     echo -e "${BLUE}  FASE 1: LISTANDO RECURSOS A SEREM DELETADOS  ${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════${NC}\n"
     
     local total_resources=0
     
-    for i in $(seq 1 $num_alunos); do
-        local aluno_num=$(printf "%02d" $i)
-        local aluno_id="${prefixo}${aluno_num}"
-        
-        echo -e "${YELLOW}Aluno: $aluno_id${NC}"
-        
-        # Listar clusters
-        for cluster_pattern in "${aluno_id}-lab-cluster-console" "${aluno_id}-lab-cluster-terraform" "${aluno_id}-lab-cluster-restored" "${aluno_id}-lab-cluster-pitr" "${aluno_id}-lab-cluster-rollback"; do
-            if aws docdb describe-db-clusters --db-cluster-identifier "$cluster_pattern" &> /dev/null; then
-                echo "  📦 Cluster: $cluster_pattern"
-                ((total_resources++))
-            fi
-        done
-        
-        # Listar snapshots
-        local snapshots=$(aws docdb describe-db-cluster-snapshots \
-            --snapshot-type manual \
-            --query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '$aluno_id')].DBClusterSnapshotIdentifier" \
-            --output text 2>/dev/null)
-        for snapshot in $snapshots; do
-            if [ -n "$snapshot" ] && [ "$snapshot" != "None" ]; then
-                echo "  📸 Snapshot: $snapshot"
-                ((total_resources++))
-            fi
-        done
-        
-        # Listar security groups
-        for sg_pattern in "${aluno_id}-docdb-lab-sg" "${aluno_id}-app-client-sg"; do
-            if aws ec2 describe-security-groups --filters "Name=group-name,Values=$sg_pattern" --query 'SecurityGroups[0].GroupId' --output text &> /dev/null; then
-                echo "  🔒 Security Group: $sg_pattern"
-                ((total_resources++))
-            fi
-        done
-        
-        # Listar dashboards
-        for dashboard in "${aluno_id}-DocumentDB-Dashboard" "${aluno_id}-DocumentDB-Dashboard-ByAWSCli" "${aluno_id}-Performance-Tuning-Dashboard-byAWSCLI"; do
-            if aws cloudwatch get-dashboard --dashboard-name "$dashboard" &> /dev/null; then
-                echo "  📊 Dashboard: $dashboard"
-                ((total_resources++))
-            fi
-        done
-        
-        # Listar alarmes
-        local alarms=$(aws cloudwatch describe-alarms --query "MetricAlarms[?starts_with(AlarmName, '$aluno_id')].AlarmName" --output text 2>/dev/null)
-        for alarm in $alarms; do
-            if [ -n "$alarm" ] && [ "$alarm" != "None" ]; then
-                echo "  🚨 Alarme: $alarm"
-                ((total_resources++))
-            fi
-        done
-        
-        # Listar tópicos SNS
-        local topics=$(aws sns list-topics --query "Topics[?contains(TopicArn, '$aluno_id')].TopicArn" --output text 2>/dev/null)
-        for topic in $topics; do
-            if [ -n "$topic" ] && [ "$topic" != "None" ]; then
-                echo "  📢 SNS Topic: $(basename $topic)"
-                ((total_resources++))
-            fi
-        done
-        
-        # Listar buckets S3
-        local buckets=$(aws s3 ls | grep "${aluno_id}-docdb-backups" | awk '{print $3}')
-        for bucket in $buckets; do
-            if [ -n "$bucket" ]; then
-                echo "  🪣 S3 Bucket: $bucket"
-                ((total_resources++))
-            fi
-        done
+    # Arrays para armazenar recursos encontrados
+    declare -a FOUND_CLUSTERS
+    declare -a FOUND_INSTANCES
+    declare -a FOUND_SNAPSHOTS
+    declare -a FOUND_PARAM_GROUPS
+    declare -a FOUND_SUBNET_GROUPS
+    declare -a FOUND_SECURITY_GROUPS
+    declare -a FOUND_DASHBOARDS
+    declare -a FOUND_ALARMS
+    declare -a FOUND_SNS_TOPICS
+    declare -a FOUND_EVENT_RULES
+    declare -a FOUND_LOG_GROUPS
+    declare -a FOUND_S3_BUCKETS
+    
+    log "Descobrindo clusters DocumentDB que começam com '${prefixo}'..."
+    FOUND_CLUSTERS=($(aws docdb describe-db-clusters \
+        --query "DBClusters[?starts_with(DBClusterIdentifier, '${prefixo}')].DBClusterIdentifier" \
+        --output text 2>/dev/null))
+    
+    for cluster in "${FOUND_CLUSTERS[@]}"; do
+        if [ -n "$cluster" ] && [ "$cluster" != "None" ]; then
+            echo "  📦 Cluster: $cluster"
+            ((total_resources++))
+            
+            # Descobrir instâncias do cluster
+            local instances=$(aws docdb describe-db-clusters \
+                --db-cluster-identifier "$cluster" \
+                --query 'DBClusters[0].DBClusterMembers[].DBInstanceIdentifier' \
+                --output text 2>/dev/null)
+            for instance in $instances; do
+                if [ -n "$instance" ] && [ "$instance" != "None" ]; then
+                    FOUND_INSTANCES+=("$instance")
+                    echo "    └─ 💾 Instance: $instance"
+                    ((total_resources++))
+                fi
+            done
+        fi
+    done
+    
+    log "Descobrindo snapshots que começam com '${prefixo}'..."
+    FOUND_SNAPSHOTS=($(aws docdb describe-db-cluster-snapshots \
+        --snapshot-type manual \
+        --query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '${prefixo}')].DBClusterSnapshotIdentifier" \
+        --output text 2>/dev/null))
+    
+    for snapshot in "${FOUND_SNAPSHOTS[@]}"; do
+        if [ -n "$snapshot" ] && [ "$snapshot" != "None" ]; then
+            echo "  📸 Snapshot: $snapshot"
+            ((total_resources++))
+        fi
+    done
+    
+    log "Descobrindo parameter groups que começam com '${prefixo}'..."
+    FOUND_PARAM_GROUPS=($(aws docdb describe-db-cluster-parameter-groups \
+        --query "DBClusterParameterGroups[?starts_with(DBClusterParameterGroupName, '${prefixo}')].DBClusterParameterGroupName" \
+        --output text 2>/dev/null))
+    
+    for pg in "${FOUND_PARAM_GROUPS[@]}"; do
+        if [ -n "$pg" ] && [ "$pg" != "None" ]; then
+            echo "  ⚙️  Parameter Group: $pg"
+            ((total_resources++))
+        fi
+    done
+    
+    log "Descobrindo subnet groups que começam com '${prefixo}'..."
+    FOUND_SUBNET_GROUPS=($(aws docdb describe-db-subnet-groups \
+        --query "DBSubnetGroups[?starts_with(DBSubnetGroupName, '${prefixo}')].DBSubnetGroupName" \
+        --output text 2>/dev/null))
+    
+    for sg in "${FOUND_SUBNET_GROUPS[@]}"; do
+        if [ -n "$sg" ] && [ "$sg" != "None" ]; then
+            echo "  🌐 Subnet Group: $sg"
+            ((total_resources++))
+        fi
+    done
+    
+    log "Descobrindo security groups que começam com '${prefixo}'..."
+    local sg_ids=$(aws ec2 describe-security-groups \
+        --filters "Name=group-name,Values=${prefixo}*" \
+        --query 'SecurityGroups[].GroupName' \
+        --output text 2>/dev/null)
+    
+    for sg_name in $sg_ids; do
+        if [ -n "$sg_name" ] && [ "$sg_name" != "None" ]; then
+            FOUND_SECURITY_GROUPS+=("$sg_name")
+            echo "  🔒 Security Group: $sg_name"
+            ((total_resources++))
+        fi
+    done
+    
+    log "Descobrindo dashboards CloudWatch que começam com '${prefixo}'..."
+    local all_dashboards=$(aws cloudwatch list-dashboards --query 'DashboardEntries[].DashboardName' --output text 2>/dev/null)
+    for dashboard in $all_dashboards; do
+        if [[ "$dashboard" =~ ^${prefixo} ]]; then
+            FOUND_DASHBOARDS+=("$dashboard")
+            echo "  📊 Dashboard: $dashboard"
+            ((total_resources++))
+        fi
+    done
+    
+    log "Descobrindo alarmes CloudWatch que começam com '${prefixo}'..."
+    FOUND_ALARMS=($(aws cloudwatch describe-alarms \
+        --query "MetricAlarms[?starts_with(AlarmName, '${prefixo}')].AlarmName" \
+        --output text 2>/dev/null))
+    
+    for alarm in "${FOUND_ALARMS[@]}"; do
+        if [ -n "$alarm" ] && [ "$alarm" != "None" ]; then
+            echo "  🚨 Alarme: $alarm"
+            ((total_resources++))
+        fi
+    done
+    
+    log "Descobrindo regras EventBridge que começam com '${prefixo}'..."
+    FOUND_EVENT_RULES=($(aws events list-rules \
+        --query "Rules[?starts_with(Name, '${prefixo}')].Name" \
+        --output text 2>/dev/null))
+    
+    for rule in "${FOUND_EVENT_RULES[@]}"; do
+        if [ -n "$rule" ] && [ "$rule" != "None" ]; then
+            echo "  📅 EventBridge Rule: $rule"
+            ((total_resources++))
+        fi
+    done
+    
+    log "Descobrindo tópicos SNS que contêm '${prefixo}'..."
+    local all_topics=$(aws sns list-topics --query 'Topics[].TopicArn' --output text 2>/dev/null)
+    for topic in $all_topics; do
+        if [[ "$topic" =~ ${prefixo} ]]; then
+            FOUND_SNS_TOPICS+=("$topic")
+            echo "  📢 SNS Topic: $(basename $topic)"
+            ((total_resources++))
+        fi
+    done
+    
+    log "Descobrindo log groups que contêm '${prefixo}'..."
+    local all_log_groups=$(aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text 2>/dev/null)
+    for log_group in $all_log_groups; do
+        if [[ "$log_group" =~ ${prefixo} ]]; then
+            FOUND_LOG_GROUPS+=("$log_group")
+            echo "  📝 Log Group: $log_group"
+            ((total_resources++))
+        fi
+    done
+    
+    log "Descobrindo buckets S3 que contêm '${prefixo}'..."
+    local all_buckets=$(aws s3 ls | awk '{print $3}')
+    for bucket in $all_buckets; do
+        if [[ "$bucket" =~ ${prefixo} ]]; then
+            FOUND_S3_BUCKETS+=("$bucket")
+            echo "  🪣 S3 Bucket: $bucket"
+            ((total_resources++))
+        fi
     done
     
     echo -e "\n${YELLOW}Total de recursos encontrados: $total_resources${NC}\n"
@@ -125,82 +202,40 @@ cleanup_lab_resources() {
         return 1
     fi
     
-    # FASE 2: DELEÇÃO
+    # FASE 2: DELEÇÃO (usando recursos descobertos)
     echo -e "\n${BLUE}═══════════════════════════════════════════════${NC}"
     echo -e "${BLUE}  FASE 2: DELETANDO RECURSOS (ordem correta)   ${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════${NC}\n"
     
-    for i in $(seq 1 $num_alunos); do
-        local aluno_num=$(printf "%02d" $i)
-        local aluno_id="${prefixo}${aluno_num}"
-        
-        echo -e "${YELLOW}Processando $aluno_id...${NC}"
-        
-        # PASSO 1: Deletar clusters DocumentDB (e suas instâncias)
-        for cluster_pattern in "${aluno_id}-lab-cluster-console" "${aluno_id}-lab-cluster-terraform" "${aluno_id}-lab-cluster-restored" "${aluno_id}-lab-cluster-pitr" "${aluno_id}-lab-cluster-rollback"; do
-            if aws docdb describe-db-clusters --db-cluster-identifier "$cluster_pattern" &> /dev/null; then
-                log "Deletando cluster: $cluster_pattern"
-                
-                # Deletar instâncias primeiro
-                local instances=$(aws docdb describe-db-clusters \
-                    --db-cluster-identifier "$cluster_pattern" \
-                    --query 'DBClusters[0].DBClusterMembers[].DBInstanceIdentifier' \
-                    --output text 2>/dev/null)
-                
-                for instance in $instances; do
-                    if [ -n "$instance" ] && [ "$instance" != "None" ]; then
-                        aws docdb delete-db-instance --db-instance-identifier "$instance" 2>/dev/null && \
-                            SUCCESS_RESOURCES+=("Instance: $instance") || \
-                            FAILED_RESOURCES+=("Instance: $instance")
-                    fi
-                done
-                
-                sleep 3
-                
-                # Deletar cluster
-                aws docdb delete-db-cluster --db-cluster-identifier "$cluster_pattern" --skip-final-snapshot 2>/dev/null && \
-                    SUCCESS_RESOURCES+=("Cluster: $cluster_pattern") || \
-                    FAILED_RESOURCES+=("Cluster: $cluster_pattern")
+    # PASSO 1: Deletar instâncias DocumentDB primeiro
+    if [ ${#FOUND_INSTANCES[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_INSTANCES[@]} instâncias DocumentDB..."
+        for instance in "${FOUND_INSTANCES[@]}"; do
+            if [ -n "$instance" ] && [ "$instance" != "None" ]; then
+                log "  Deletando instância: $instance"
+                aws docdb delete-db-instance --db-instance-identifier "$instance" 2>/dev/null && \
+                    SUCCESS_RESOURCES+=("Instance: $instance") || \
+                    FAILED_RESOURCES+=("Instance: $instance")
             fi
         done
-        
-        # PASSO 2: Deletar snapshots (não têm dependências)
-        local snapshots=$(aws docdb describe-db-cluster-snapshots \
-            --snapshot-type manual \
-            --query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '$aluno_id')].DBClusterSnapshotIdentifier" \
-            --output text 2>/dev/null)
-        
-        for snapshot in $snapshots; do
-            if [ -n "$snapshot" ] && [ "$snapshot" != "None" ]; then
-                aws docdb delete-db-cluster-snapshot --db-cluster-snapshot-identifier "$snapshot" 2>/dev/null && \
-                    SUCCESS_RESOURCES+=("Snapshot: $snapshot") || \
-                    FAILED_RESOURCES+=("Snapshot: $snapshot")
+        sleep 5
+    fi
+    
+    # PASSO 2: Deletar clusters DocumentDB
+    if [ ${#FOUND_CLUSTERS[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_CLUSTERS[@]} clusters DocumentDB..."
+        for cluster in "${FOUND_CLUSTERS[@]}"; do
+            if [ -n "$cluster" ] && [ "$cluster" != "None" ]; then
+                log "  Deletando cluster: $cluster"
+                aws docdb delete-db-cluster --db-cluster-identifier "$cluster" --skip-final-snapshot 2>/dev/null && \
+                    SUCCESS_RESOURCES+=("Cluster: $cluster") || \
+                    FAILED_RESOURCES+=("Cluster: $cluster")
             fi
         done
-        
-        # PASSO 3: Deletar parameter groups
-        local param_groups=$(aws docdb describe-db-cluster-parameter-groups \
-            --query "DBClusterParameterGroups[?starts_with(DBClusterParameterGroupName, '$aluno_id')].DBClusterParameterGroupName" \
-            --output text 2>/dev/null)
-        
-        for pg in $param_groups; do
-            if [ -n "$pg" ] && [ "$pg" != "None" ]; then
-                aws docdb delete-db-cluster-parameter-group --db-cluster-parameter-group-name "$pg" 2>/dev/null && \
-                    SUCCESS_RESOURCES+=("ParamGroup: $pg") || \
-                    FAILED_RESOURCES+=("ParamGroup: $pg")
-            fi
-        done
-        
-        # PASSO 4: Deletar subnet groups
-        for subnet_pattern in "${aluno_id}-docdb-lab-subnet-group"; do
-            if aws docdb describe-db-subnet-groups --db-subnet-group-name "$subnet_pattern" &> /dev/null; then
-                aws docdb delete-db-subnet-group --db-subnet-group-name "$subnet_pattern" 2>/dev/null && \
-                    SUCCESS_RESOURCES+=("SubnetGroup: $subnet_pattern") || \
-                    FAILED_RESOURCES+=("SubnetGroup: $subnet_pattern")
-            fi
-        done
-        
-        # PASSO 5: Aguardar clusters serem deletados antes de remover SGs
+    fi
+    
+    # PASSO 3: Aguardar clusters serem deletados antes de remover recursos dependentes
+    if [ ${#FOUND_CLUSTERS[@]} -gt 0 ]; then
         log "Aguardando clusters serem deletados (pode levar até 10 minutos)..."
         log "Verificando status dos clusters a cada 30 segundos..."
         
@@ -211,8 +246,8 @@ cleanup_lab_resources() {
         while [ $elapsed -lt $max_wait ]; do
             local clusters_remaining=0
             
-            for cluster_pattern in "${aluno_id}-lab-cluster-console" "${aluno_id}-lab-cluster-terraform" "${aluno_id}-lab-cluster-restored" "${aluno_id}-lab-cluster-pitr" "${aluno_id}-lab-cluster-rollback"; do
-                if aws docdb describe-db-clusters --db-cluster-identifier "$cluster_pattern" &> /dev/null; then
+            for cluster in "${FOUND_CLUSTERS[@]}"; do
+                if aws docdb describe-db-clusters --db-cluster-identifier "$cluster" &> /dev/null 2>&1; then
                     ((clusters_remaining++))
                 fi
             done
@@ -231,18 +266,57 @@ cleanup_lab_resources() {
         if [ "$all_deleted" = false ]; then
             warning "Timeout aguardando deleção de clusters (10 min)"
             warning "Alguns clusters ainda podem estar sendo deletados"
-            warning "Security Groups podem falhar ao deletar se clusters ainda existirem"
+            warning "Recursos dependentes podem falhar ao deletar"
         fi
-        
-        # PASSO 6: Remover regras dos Security Groups primeiro
-        for sg_pattern in "${aluno_id}-docdb-lab-sg" "${aluno_id}-app-client-sg"; do
+    fi
+    
+    # PASSO 4: Deletar snapshots (não têm dependências)
+    if [ ${#FOUND_SNAPSHOTS[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_SNAPSHOTS[@]} snapshots..."
+        for snapshot in "${FOUND_SNAPSHOTS[@]}"; do
+            if [ -n "$snapshot" ] && [ "$snapshot" != "None" ]; then
+                aws docdb delete-db-cluster-snapshot --db-cluster-snapshot-identifier "$snapshot" 2>/dev/null && \
+                    SUCCESS_RESOURCES+=("Snapshot: $snapshot") || \
+                    FAILED_RESOURCES+=("Snapshot: $snapshot")
+            fi
+        done
+    fi
+    
+    # PASSO 5: Deletar parameter groups
+    if [ ${#FOUND_PARAM_GROUPS[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_PARAM_GROUPS[@]} parameter groups..."
+        for pg in "${FOUND_PARAM_GROUPS[@]}"; do
+            if [ -n "$pg" ] && [ "$pg" != "None" ]; then
+                aws docdb delete-db-cluster-parameter-group --db-cluster-parameter-group-name "$pg" 2>/dev/null && \
+                    SUCCESS_RESOURCES+=("ParamGroup: $pg") || \
+                    FAILED_RESOURCES+=("ParamGroup: $pg")
+            fi
+        done
+    fi
+    
+    # PASSO 6: Deletar subnet groups
+    if [ ${#FOUND_SUBNET_GROUPS[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_SUBNET_GROUPS[@]} subnet groups..."
+        for sg in "${FOUND_SUBNET_GROUPS[@]}"; do
+            if [ -n "$sg" ] && [ "$sg" != "None" ]; then
+                aws docdb delete-db-subnet-group --db-subnet-group-name "$sg" 2>/dev/null && \
+                    SUCCESS_RESOURCES+=("SubnetGroup: $sg") || \
+                    FAILED_RESOURCES+=("SubnetGroup: $sg")
+            fi
+        done
+    fi
+    
+    # PASSO 7: Remover regras dos Security Groups primeiro
+    if [ ${#FOUND_SECURITY_GROUPS[@]} -gt 0 ]; then
+        log "Removendo regras de ${#FOUND_SECURITY_GROUPS[@]} security groups..."
+        for sg_name in "${FOUND_SECURITY_GROUPS[@]}"; do
             local sg_id=$(aws ec2 describe-security-groups \
-                --filters "Name=group-name,Values=$sg_pattern" \
+                --filters "Name=group-name,Values=$sg_name" \
                 --query 'SecurityGroups[0].GroupId' \
                 --output text 2>/dev/null)
             
             if [ -n "$sg_id" ] && [ "$sg_id" != "None" ]; then
-                log "Removendo regras do SG: $sg_pattern"
+                log "  Removendo regras do SG: $sg_name"
                 
                 # Remover regras de ingress
                 aws ec2 describe-security-groups --group-ids "$sg_id" \
@@ -252,7 +326,7 @@ cleanup_lab_resources() {
                         aws ec2 revoke-security-group-ingress --group-id "$sg_id" --ip-permissions "$rule" 2>/dev/null || true
                     done
                 
-                # Remover regras de egress (exceto a padrão)
+                # Remover regras de egress
                 aws ec2 describe-security-groups --group-ids "$sg_id" \
                     --query 'SecurityGroups[0].IpPermissionsEgress' \
                     --output json 2>/dev/null | \
@@ -263,51 +337,55 @@ cleanup_lab_resources() {
         done
         
         sleep 5
-        
-        # PASSO 7: Deletar Security Groups
-        for sg_pattern in "${aluno_id}-docdb-lab-sg" "${aluno_id}-app-client-sg"; do
+    fi
+    
+    # PASSO 8: Deletar Security Groups
+    if [ ${#FOUND_SECURITY_GROUPS[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_SECURITY_GROUPS[@]} security groups..."
+        for sg_name in "${FOUND_SECURITY_GROUPS[@]}"; do
             local sg_id=$(aws ec2 describe-security-groups \
-                --filters "Name=group-name,Values=$sg_pattern" \
+                --filters "Name=group-name,Values=$sg_name" \
                 --query 'SecurityGroups[0].GroupId' \
                 --output text 2>/dev/null)
             
             if [ -n "$sg_id" ] && [ "$sg_id" != "None" ]; then
                 aws ec2 delete-security-group --group-id "$sg_id" 2>/dev/null && \
-                    SUCCESS_RESOURCES+=("SecurityGroup: $sg_pattern") || \
-                    FAILED_RESOURCES+=("SecurityGroup: $sg_pattern")
+                    SUCCESS_RESOURCES+=("SecurityGroup: $sg_name") || \
+                    FAILED_RESOURCES+=("SecurityGroup: $sg_name")
             fi
         done
-        
-        # PASSO 8: Deletar recursos de monitoramento (sem dependências)
-        
-        # Dashboards
-        for dashboard in "${aluno_id}-DocumentDB-Dashboard" "${aluno_id}-DocumentDB-Dashboard-ByAWSCli" "${aluno_id}-Performance-Tuning-Dashboard-byAWSCLI"; do
-            if aws cloudwatch get-dashboard --dashboard-name "$dashboard" &> /dev/null; then
+    fi
+    
+    # PASSO 9: Deletar recursos de monitoramento (sem dependências)
+    
+    # Dashboards
+    if [ ${#FOUND_DASHBOARDS[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_DASHBOARDS[@]} dashboards..."
+        for dashboard in "${FOUND_DASHBOARDS[@]}"; do
+            if [ -n "$dashboard" ] && [ "$dashboard" != "None" ]; then
                 aws cloudwatch delete-dashboards --dashboard-names "$dashboard" 2>/dev/null && \
                     SUCCESS_RESOURCES+=("Dashboard: $dashboard") || \
                     FAILED_RESOURCES+=("Dashboard: $dashboard")
             fi
         done
-        
-        # Alarmes
-        local alarms=$(aws cloudwatch describe-alarms \
-            --query "MetricAlarms[?starts_with(AlarmName, '$aluno_id')].AlarmName" \
-            --output text 2>/dev/null)
-        
-        for alarm in $alarms; do
+    fi
+    
+    # Alarmes
+    if [ ${#FOUND_ALARMS[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_ALARMS[@]} alarmes..."
+        for alarm in "${FOUND_ALARMS[@]}"; do
             if [ -n "$alarm" ] && [ "$alarm" != "None" ]; then
                 aws cloudwatch delete-alarms --alarm-names "$alarm" 2>/dev/null && \
                     SUCCESS_RESOURCES+=("Alarm: $alarm") || \
                     FAILED_RESOURCES+=("Alarm: $alarm")
             fi
         done
-        
-        # Regras EventBridge (remover targets primeiro)
-        local rules=$(aws events list-rules \
-            --query "Rules[?starts_with(Name, '$aluno_id')].Name" \
-            --output text 2>/dev/null)
-        
-        for rule in $rules; do
+    fi
+    
+    # Regras EventBridge (remover targets primeiro)
+    if [ ${#FOUND_EVENT_RULES[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_EVENT_RULES[@]} regras EventBridge..."
+        for rule in "${FOUND_EVENT_RULES[@]}"; do
             if [ -n "$rule" ] && [ "$rule" != "None" ]; then
                 # Remover targets
                 local targets=$(aws events list-targets-by-rule --rule "$rule" --query 'Targets[].Id' --output text 2>/dev/null)
@@ -320,40 +398,45 @@ cleanup_lab_resources() {
                     FAILED_RESOURCES+=("EventRule: $rule")
             fi
         done
-        
-        # Tópicos SNS
-        local topics=$(aws sns list-topics \
-            --query "Topics[?contains(TopicArn, '$aluno_id')].TopicArn" \
-            --output text 2>/dev/null)
-        
-        for topic in $topics; do
+    fi
+    
+    # Tópicos SNS
+    if [ ${#FOUND_SNS_TOPICS[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_SNS_TOPICS[@]} tópicos SNS..."
+        for topic in "${FOUND_SNS_TOPICS[@]}"; do
             if [ -n "$topic" ] && [ "$topic" != "None" ]; then
                 aws sns delete-topic --topic-arn "$topic" 2>/dev/null && \
                     SUCCESS_RESOURCES+=("SNSTopic: $(basename $topic)") || \
                     FAILED_RESOURCES+=("SNSTopic: $(basename $topic)")
             fi
         done
-        
-        # Log Groups
-        for log_pattern in "/aws/docdb/${aluno_id}-lab-cluster-console/audit"; do
-            if aws logs describe-log-groups --log-group-name-prefix "$log_pattern" &> /dev/null; then
-                aws logs delete-log-group --log-group-name "$log_pattern" 2>/dev/null && \
-                    SUCCESS_RESOURCES+=("LogGroup: $log_pattern") || \
-                    FAILED_RESOURCES+=("LogGroup: $log_pattern")
+    fi
+    
+    # Log Groups
+    if [ ${#FOUND_LOG_GROUPS[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_LOG_GROUPS[@]} log groups..."
+        for log_group in "${FOUND_LOG_GROUPS[@]}"; do
+            if [ -n "$log_group" ] && [ "$log_group" != "None" ]; then
+                aws logs delete-log-group --log-group-name "$log_group" 2>/dev/null && \
+                    SUCCESS_RESOURCES+=("LogGroup: $log_group") || \
+                    FAILED_RESOURCES+=("LogGroup: $log_group")
             fi
         done
-        
-        # Buckets S3
-        local buckets=$(aws s3 ls | grep "${aluno_id}-docdb-backups" | awk '{print $3}')
-        for bucket in $buckets; do
+    fi
+    
+    # Buckets S3
+    if [ ${#FOUND_S3_BUCKETS[@]} -gt 0 ]; then
+        log "Deletando ${#FOUND_S3_BUCKETS[@]} buckets S3..."
+        for bucket in "${FOUND_S3_BUCKETS[@]}"; do
             if [ -n "$bucket" ]; then
+                log "  Esvaziando bucket: $bucket"
                 aws s3 rm "s3://${bucket}" --recursive 2>/dev/null || true
                 aws s3 rb "s3://${bucket}" 2>/dev/null && \
                     SUCCESS_RESOURCES+=("S3Bucket: $bucket") || \
                     FAILED_RESOURCES+=("S3Bucket: $bucket")
             fi
         done
-    done
+    fi
     
     # FASE 3: RELATÓRIO FINAL
     echo -e "\n${BLUE}═══════════════════════════════════════════════${NC}"
