@@ -362,13 +362,13 @@ for i in $(seq 1 $NUM_ALUNOS); do
             # Setup do ambiente
             cd /home/\${PrefixoAluno}${ALUNO_NUM}
             wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} sudo pip3 install --user boto3
+            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} global-bundle.pem
+            sudo -u \${PrefixoAluno}${ALUNO_NUM} pip3 install --user boto3
             sudo -u \${PrefixoAluno}${ALUNO_NUM} \
               git clone https://github.com/DevWizardsOps/Curso-documentDB.git
             sudo -u \${PrefixoAluno}${ALUNO_NUM} \
-              sudo rm -fr /home/\${PrefixoAluno}${ALUNO_NUM}/Curso-documentDB/preparacao-curso
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} \
-              sudo timedatectl set-timezone America/Recife
+              rm -fr /home/\${PrefixoAluno}${ALUNO_NUM}/Curso-documentDB/preparacao-curso
+            timedatectl set-timezone America/Recife
             
             # Criar arquivo de boas-vindas (usando echo para evitar problemas com heredoc)
             echo "╔══════════════════════════════════════════════════════════════╗" > /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
@@ -444,12 +444,26 @@ for i in $(seq 1 $NUM_ALUNOS); do
     cat >> setup-curso-documentdb-dynamic.yaml << EOF_OUTPUT
   Aluno${ALUNO_NUM}Info:
     Condition: CreateAluno${ALUNO_NUM}
-    Description: 'IP e credenciais do Aluno ${ALUNO_NUM}'
+    Description: 'Informacoes de acesso do Aluno ${ALUNO_NUM}'
     Value: !Sub |
-      IP: \${Aluno${ALUNO_NUM}Instance.PublicIp}
-      IAM User: \${Aluno${ALUNO_NUM}User}
-      Console Password: Armazenada no Secrets Manager (\${ConsolePasswordSecret})
-      SSH: ssh -i \${KeyPairName}.pem ec2-user@\${Aluno${ALUNO_NUM}Instance.PublicIp}
+      ===============================================================
+      ALUNO ${ALUNO_NUM} - \${PrefixoAluno}${ALUNO_NUM}
+      ===============================================================
+      
+      CONSOLE AWS:
+        URL: https://\${AWS::AccountId}.signin.aws.amazon.com/console
+        Usuario IAM: \${AWS::StackName}-\${PrefixoAluno}${ALUNO_NUM}
+        Senha: Armazenada no Secrets Manager (\${ConsolePasswordSecret})
+      
+      INSTANCIA EC2:
+        IP Publico: \${Aluno${ALUNO_NUM}Instance.PublicIp}
+        Usuario Linux: \${PrefixoAluno}${ALUNO_NUM}
+      
+      ACESSO SSH:
+        Chave: \${KeyPairName}.pem
+        Comando: ssh -i \${KeyPairName}.pem \${PrefixoAluno}${ALUNO_NUM}@\${Aluno${ALUNO_NUM}Instance.PublicIp}
+      
+      AWS CLI ja configurado na instancia!
 
 EOF_OUTPUT
 done
@@ -461,21 +475,36 @@ cat >> setup-curso-documentdb-dynamic.yaml << 'EOF_FOOTER'
     Export:
       Name: !Sub '${AWS::StackName}-ConsolePassword-Secret'
 
-  InstrucoesConexao:
-    Description: 'Como conectar as instancias'
+  SecretsManagerURL:
+    Description: 'Link direto para o Secrets Manager'
+    Value: !Sub 'https://console.aws.amazon.com/secretsmanager/home?region=${AWS::Region}#!/secret?name=${ConsolePasswordSecret}'
+
+  InstrucoesGerais:
+    Description: 'Instrucoes gerais do curso'
     Value: !Sub |
-      === ACESSO AO CONSOLE AWS ===
-      URL: https://${AWS::AccountId}.signin.aws.amazon.com/console
-      Senha: Armazenada no Secrets Manager
+      ===============================================================
+      CURSO DOCUMENTDB - INSTRUCOES GERAIS
+      ===============================================================
       
-      Para recuperar a senha:
-      aws secretsmanager get-secret-value --secret-id ${ConsolePasswordSecret} --query SecretString --output text | jq -r .password
+      SENHA DO CONSOLE:
+        Link Direto: https://console.aws.amazon.com/secretsmanager/home?region=${AWS::Region}#!/secret?name=${ConsolePasswordSecret}
+        
+        Via CLI:
+        aws secretsmanager get-secret-value \
+          --secret-id ${ConsolePasswordSecret} \
+          --query SecretString --output text | jq -r .password
       
-      === ACESSO SSH ===
-      Chave SSH: ${KeyPairName}.pem
-      Comando: ssh -i ${KeyPairName}.pem ec2-user@IP-PUBLICO
-      Depois: sudo su - ${PrefixoAluno}XX
-      AWS CLI já configurado!
+      CHAVE SSH:
+        Nome: ${KeyPairName}.pem
+        Localizacao: Mesmo diretorio do script de deploy
+      
+      RECURSOS CRIADOS:
+        - Security Group DocumentDB: ${DocumentDBSecurityGroup}
+        - Bucket S3 Labs: ${LabsBucket}
+        - Regiao: ${AWS::Region}
+      
+      DICA: Veja os outputs individuais de cada aluno acima!
+      RELATORIO WEB: Verifique o link gerado pelo script de deploy
 EOF_FOOTER
 
 echo "Template gerado: setup-curso-documentdb-dynamic.yaml (para $NUM_ALUNOS alunos)"

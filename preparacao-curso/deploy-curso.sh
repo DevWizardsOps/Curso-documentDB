@@ -264,20 +264,59 @@ echo ""
 log "Configurando Secrets Manager..."
 SECRET_NAME="${STACK_NAME}-console-password"
 
+# Desabilitar exit on error temporariamente para verificação
+set +e
+
 # Verificar se o secret já existe
-if aws secretsmanager describe-secret --secret-id $SECRET_NAME &> /dev/null; then
-    log "Secret já existe, atualizando..."
-    aws secretsmanager put-secret-value \
-        --secret-id $SECRET_NAME \
-        --secret-string "{\"password\":\"$CONSOLE_PASSWORD\"}"
+aws secretsmanager describe-secret --secret-id $SECRET_NAME &> /dev/null
+SECRET_EXISTS=$?
+
+if [ $SECRET_EXISTS -eq 0 ]; then
+    # Secret existe, verificar se está deletado
+    SECRET_STATUS=$(aws secretsmanager describe-secret --secret-id $SECRET_NAME --query 'DeletedDate' --output text 2>/dev/null)
     
-    if [ $? -eq 0 ]; then
-        success "Secret atualizado: $SECRET_NAME"
+    if [ "$SECRET_STATUS" == "None" ] || [ -z "$SECRET_STATUS" ]; then
+        # Secret existe e está ativo
+        log "Secret já existe, atualizando..."
+        aws secretsmanager put-secret-value \
+            --secret-id $SECRET_NAME \
+            --secret-string "{\"password\":\"$CONSOLE_PASSWORD\"}"
+        
+        if [ $? -eq 0 ]; then
+            success "Secret atualizado: $SECRET_NAME"
+        else
+            set -e
+            error "Falha ao atualizar secret"
+            exit 1
+        fi
     else
-        error "Falha ao atualizar secret"
-        exit 1
+        # Secret existe mas está marcado para deleção
+        warning "Secret existe mas está marcado para deleção. Restaurando..."
+        aws secretsmanager restore-secret --secret-id $SECRET_NAME
+        
+        if [ $? -eq 0 ]; then
+            success "Secret restaurado: $SECRET_NAME"
+            
+            # Atualizar o valor
+            aws secretsmanager put-secret-value \
+                --secret-id $SECRET_NAME \
+                --secret-string "{\"password\":\"$CONSOLE_PASSWORD\"}"
+            
+            if [ $? -eq 0 ]; then
+                success "Secret atualizado: $SECRET_NAME"
+            else
+                set -e
+                error "Falha ao atualizar secret restaurado"
+                exit 1
+            fi
+        else
+            set -e
+            error "Falha ao restaurar secret"
+            exit 1
+        fi
     fi
 else
+    # Secret não existe, criar novo
     log "Criando novo secret..."
     aws secretsmanager create-secret \
         --name $SECRET_NAME \
@@ -288,10 +327,14 @@ else
     if [ $? -eq 0 ]; then
         success "Secret criado: $SECRET_NAME"
     else
+        set -e
         error "Falha ao criar secret"
         exit 1
     fi
 fi
+
+# Reabilitar exit on error
+set -e
 
 # Obter ARN do secret
 SECRET_ARN=$(aws secretsmanager describe-secret --secret-id $SECRET_NAME --query 'ARN' --output text)
@@ -458,24 +501,380 @@ if [ $? -eq 0 ]; then
         echo ""
         echo -e "${GREEN}✨ Ambiente pronto para o curso! ✨${NC}"
         
-        # Mostrar todos os outputs do CloudFormation
-        echo ""
-        echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
-        echo -e "${BLUE}           OUTPUTS DO CLOUDFORMATION                           ${NC}"
-        echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
-        echo ""
+        # Gerar arquivo HTML com as informações
+        log "Gerando relatório HTML..."
         
-        aws cloudformation describe-stacks \
-            --stack-name $STACK_NAME \
-            --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-            --output text | while IFS=$'\t' read -r key value; do
-            echo -e "${GREEN}${key}:${NC}"
-            echo "$value" | sed 's/^/  /'
-            echo ""
+        HTML_FILE="curso-documentdb-info-$(date +%Y%m%d-%H%M%S).html"
+        
+        cat > $HTML_FILE << 'HTML_HEADER'
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curso DocumentDB - Informações de Acesso</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px;
+        }
+        .info-section {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .info-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .info-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+        .info-item strong {
+            color: #333;
+            display: inline-block;
+            min-width: 150px;
+        }
+        .aluno-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .aluno-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+        .aluno-card h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-right: 10px;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; }
+            .aluno-card { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Curso DocumentDB</h1>
+            <p>Informações de Acesso ao Ambiente AWS</p>
+HTML_HEADER
+        
+        echo "            <p>Gerado em: $(date '+%d/%m/%Y às %H:%M:%S')</p>" >> $HTML_FILE
+        echo "        </div>" >> $HTML_FILE
+        echo "        <div class=\"content\">" >> $HTML_FILE
+        
+        # Preparar links
+        SECRET_CONSOLE_URL="https://console.aws.amazon.com/secretsmanager/home?region=${REGION}#!/secret?name=${SECRET_NAME}"
+        
+        # Link da chave SSH no S3
+        SSH_KEY_LINK="Arquivo local: $KEY_FILE"
+        if [ -f ".ssh-key-info" ]; then
+            source .ssh-key-info
+            SSH_KEY_LINK="<a href='https://s3.console.aws.amazon.com/s3/object/${S3_BUCKET}?region=${REGION}&prefix=${S3_KEY_PATH}' target='_blank'>Download do S3</a>"
+        fi
+        
+        # Informações gerais
+        cat >> $HTML_FILE << HTML_GENERAL
+            <div class="info-section">
+                <h2>📋 Informações Gerais</h2>
+                <div class="info-item"><strong>Stack Name:</strong> $STACK_NAME</div>
+                <div class="info-item"><strong>Região AWS:</strong> $REGION</div>
+                <div class="info-item"><strong>Account ID:</strong> $ACCOUNT_ID</div>
+                <div class="info-item"><strong>Número de Alunos:</strong> $NUM_ALUNOS</div>
+            </div>
+            
+            <div class="info-section">
+                <h2>🌐 Acesso ao Console AWS</h2>
+                <div class="info-item">
+                    <strong>URL:</strong> 
+                    <a href="https://${ACCOUNT_ID}.signin.aws.amazon.com/console" target="_blank">
+                        https://${ACCOUNT_ID}.signin.aws.amazon.com/console
+                    </a>
+                </div>
+                <div class="info-item">
+                    <strong>Senha:</strong> 
+                    <a href="${SECRET_CONSOLE_URL}" target="_blank">Ver no Secrets Manager</a>
+                    <br><small>Secret Name: ${SECRET_NAME}</small>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h2>🔑 Chave SSH</h2>
+                <div class="info-item">
+                    <strong>Nome:</strong> $KEY_FILE<br>
+                    <strong>Download:</strong> ${SSH_KEY_LINK}
+                </div>
+                <div class="info-item">
+                    <strong>⚠️ Importante:</strong> Após baixar, execute: <code>chmod 400 $KEY_FILE</code>
+                </div>
+            </div>
+HTML_GENERAL
+        
+        # Adicionar informação da chave SSH com link do S3
+        if [ -f ".ssh-key-info" ]; then
+            source .ssh-key-info
+            S3_KEY_CONSOLE_URL="https://s3.console.aws.amazon.com/s3/object/${S3_BUCKET}?region=${REGION}&prefix=${S3_KEY_PATH}"
+            
+            cat >> $HTML_FILE << HTML_SSH_KEY
+            <div class="info-section">
+                <h2>🔑 Chave SSH</h2>
+                <div class="info-item">
+                    <strong>Nome do Arquivo:</strong> $KEY_FILE
+                </div>
+                <div class="info-item">
+                    <strong>Bucket S3:</strong> ${S3_BUCKET}
+                </div>
+                <div class="info-item">
+                    <strong>Download via Console:</strong><br>
+                    <a href="${S3_KEY_CONSOLE_URL}" target="_blank">${S3_KEY_CONSOLE_URL}</a>
+                </div>
+                <div class="info-item">
+                    <strong>Download via AWS CLI:</strong>
+                    <div class="code-block">aws s3 cp s3://${S3_BUCKET}/${S3_KEY_PATH} ${KEY_FILE}<br>chmod 400 ${KEY_FILE}</div>
+                </div>
+            </div>
+HTML_SSH_KEY
+        fi
+        
+        # Obter outputs do CloudFormation e gerar cards para cada aluno
+        echo "            <h2 style=\"color: #667eea; margin: 30px 0 20px 0;\">👨‍🎓 Informações dos Alunos</h2>" >> $HTML_FILE
+        
+        for i in $(seq 1 $NUM_ALUNOS); do
+            ALUNO_NUM=$(printf "%02d" $i)
+            
+            # Obter IP da instância diretamente
+            INSTANCE_ID=$(aws ec2 describe-instances \
+                --filters "Name=tag:Name,Values=${PREFIXO_ALUNO}${ALUNO_NUM}-instance" \
+                          "Name=instance-state-name,Values=running" \
+                --query 'Reservations[0].Instances[0].InstanceId' \
+                --output text 2>/dev/null)
+            
+            if [ "$INSTANCE_ID" != "None" ] && [ ! -z "$INSTANCE_ID" ]; then
+                IP=$(aws ec2 describe-instances \
+                    --instance-ids $INSTANCE_ID \
+                    --query 'Reservations[0].Instances[0].PublicIpAddress' \
+                    --output text 2>/dev/null)
+                
+                USUARIO_IAM="${STACK_NAME}-${PREFIXO_ALUNO}${ALUNO_NUM}"
+                USUARIO_LINUX="${PREFIXO_ALUNO}${ALUNO_NUM}"
+                
+                cat >> $HTML_FILE << HTML_ALUNO
+            <div class="aluno-card">
+                <h3>👤 Aluno ${ALUNO_NUM} - ${PREFIXO_ALUNO}${ALUNO_NUM}</h3>
+                
+                <div class="info-item">
+                    <span class="badge">Console AWS</span>
+                    <strong>Usuário IAM:</strong> $USUARIO_IAM
+                </div>
+                
+                <div class="info-item">
+                    <span class="badge">EC2</span>
+                    <strong>IP Público:</strong> $IP<br>
+                    <strong>Usuário Linux:</strong> $USUARIO_LINUX<br>
+                    <strong>Instance ID:</strong> $INSTANCE_ID
+                </div>
+                
+                <div class="info-item">
+                    <strong>🔑 Comando SSH:</strong>
+                    <div class="code-block">ssh -i $KEY_FILE ${USUARIO_LINUX}@${IP}</div>
+                </div>
+            </div>
+HTML_ALUNO
+            fi
         done
         
-        echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+        # Footer
+        cat >> $HTML_FILE << 'HTML_FOOTER'
+        </div>
+        <div class="footer">
+            <p>📚 Curso DocumentDB - DevWizardsOps</p>
+            <p>Para mais informações, consulte a documentação do curso</p>
+        </div>
+    </div>
+</body>
+</html>
+HTML_FOOTER
         
+        success "Relatório HTML gerado: $HTML_FILE"
+        
+        # Upload do HTML para S3 e configurar como website
+        log "Fazendo upload do relatório para S3..."
+        
+        # Criar bucket para o relatório (se não existir)
+        REPORT_BUCKET="${STACK_NAME}-reports-${ACCOUNT_ID}"
+        
+        if ! aws s3 ls "s3://${REPORT_BUCKET}" 2>&1 | grep -q 'NoSuchBucket'; then
+            log "Bucket já existe: ${REPORT_BUCKET}"
+        else
+            log "Criando bucket S3 para relatórios: ${REPORT_BUCKET}"
+            aws s3 mb "s3://${REPORT_BUCKET}" --region $REGION
+        fi
+        
+        # Configurar bucket como website estático
+        aws s3 website "s3://${REPORT_BUCKET}" \
+            --index-document index.html \
+            --error-document error.html
+        
+        # Configurar política de bucket para acesso público de leitura
+        cat > /tmp/bucket-policy.json << POLICY
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::${REPORT_BUCKET}/*"
+        }
+    ]
+}
+POLICY
+        
+        # Desbloquear acesso público
+        aws s3api put-public-access-block \
+            --bucket ${REPORT_BUCKET} \
+            --public-access-block-configuration \
+            "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false"
+        
+        # Aplicar política de bucket
+        aws s3api put-bucket-policy \
+            --bucket ${REPORT_BUCKET} \
+            --policy file:///tmp/bucket-policy.json
+        
+        rm -f /tmp/bucket-policy.json
+        
+        # Upload do arquivo HTML
+        REPORT_KEY="relatorio-$(date +%Y%m%d-%H%M%S).html"
+        aws s3 cp $HTML_FILE "s3://${REPORT_BUCKET}/${REPORT_KEY}" \
+            --content-type "text/html; charset=utf-8" \
+            --metadata "stack-name=${STACK_NAME},created-date=$(date -Iseconds)"
+        
+        # Também fazer upload como index.html (sempre a versão mais recente)
+        aws s3 cp $HTML_FILE "s3://${REPORT_BUCKET}/index.html" \
+            --content-type "text/html; charset=utf-8" \
+            --metadata "stack-name=${STACK_NAME},created-date=$(date -Iseconds)"
+        
+        if [ $? -eq 0 ]; then
+            # Gerar URL do website
+            WEBSITE_URL="https://${REPORT_BUCKET}.s3-${REGION}.amazonaws.com"
+            REPORT_URL="${WEBSITE_URL}/${REPORT_KEY}"
+            
+            success "Relatório publicado no S3!"
+            
+            echo ""
+            echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+            echo -e "${GREEN}           ✅ DEPLOY CONCLUÍDO COM SUCESSO!                    ${NC}"
+            echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+            echo ""
+            echo -e "${BLUE}🌐 RELATÓRIO WEB (Sempre atualizado):${NC}"
+            echo -e "${YELLOW}   $WEBSITE_URL${NC}"
+            echo ""
+            echo -e "${BLUE}📄 RELATÓRIO ESPECÍFICO (Esta execução):${NC}"
+            echo -e "${YELLOW}   $REPORT_URL${NC}"
+            echo ""
+            echo -e "${BLUE}🔐 SENHA DO CONSOLE (Secrets Manager):${NC}"
+            echo -e "${YELLOW}   https://console.aws.amazon.com/secretsmanager/home?region=${REGION}#!/secret?name=${SECRET_NAME}${NC}"
+            echo ""
+            if [ -f ".ssh-key-info" ]; then
+                source .ssh-key-info
+                echo -e "${BLUE}🔑 CHAVE SSH (S3):${NC}"
+                echo -e "${YELLOW}   https://s3.console.aws.amazon.com/s3/object/${S3_BUCKET}?region=${REGION}&prefix=${S3_KEY_PATH}${NC}"
+                echo ""
+            fi
+            echo -e "${BLUE}📁 ARQUIVO LOCAL:${NC}"
+            echo "   $(pwd)/$HTML_FILE"
+            echo ""
+            echo -e "${GREEN}💡 Compartilhe o link do relatório com os alunos!${NC}"
+            echo ""
+            
+            # Abrir o URL no navegador
+            if command -v open &> /dev/null; then
+                open $WEBSITE_URL
+            elif command -v xdg-open &> /dev/null; then
+                xdg-open $WEBSITE_URL
+            fi
+        else
+            warning "Falha ao fazer upload para S3 (não crítico)"
+            echo ""
+            echo -e "${BLUE}📄 Arquivo local: $(pwd)/$HTML_FILE${NC}"
+            
+            # Abrir o arquivo local
+            if command -v open &> /dev/null; then
+                open $HTML_FILE
+            elif command -v xdg-open &> /dev/null; then
+                xdg-open $HTML_FILE
+            fi
+        fi
     else
         error "Falha no deployment da stack"
         exit 1
