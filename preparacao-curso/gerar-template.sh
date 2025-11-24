@@ -53,7 +53,7 @@ Mappings:
     us-east-1:
       AMI: ami-0c02fb55956c7d316
     us-east-2:
-      AMI: ami-0f924dc71d44d23e2
+      AMI: ami-0c587d11c0a52bfbf
     us-west-1:
       AMI: ami-0d9858aa3c6322f73
     us-west-2:
@@ -349,7 +349,7 @@ for i in $(seq 1 $NUM_ALUNOS); do
             
             # Instalar Node.js
             curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-            yum install -y nodejs python3 python3-pip yum-utils
+            yum install -y npm wget nodejs python3 python3-pip yum-utils
             yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
             yum install -y terraform
             
