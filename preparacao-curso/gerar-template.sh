@@ -138,31 +138,7 @@ Resources:
                 Action: 'docdb-elastic:*'
                 Resource: '*'
               
-              # RDS - Operações que NÃO precisam de restrição de classe
-              - Effect: Allow
-                Action:
-                  - 'rds:Describe*'
-                  - 'rds:List*'
-                  - 'rds:CreateDBSubnetGroup'
-                  - 'rds:DeleteDBSubnetGroup'
-                  - 'rds:ModifyDBSubnetGroup'
-                  - 'rds:AddTagsToResource'
-                  - 'rds:RemoveTagsFromResource'
-                  - 'rds:CreateDBClusterParameterGroup'
-                  - 'rds:DeleteDBClusterParameterGroup'
-                  - 'rds:ModifyDBClusterParameterGroup'
-                  - 'rds:CreateDBParameterGroup'
-                  - 'rds:DeleteDBParameterGroup'
-                  - 'rds:ModifyDBParameterGroup'
-                  - 'rds:CopyDBClusterSnapshot'
-                  - 'rds:DeleteDBClusterSnapshot'
-                  - 'rds:RestoreDBClusterFromSnapshot'
-                  - 'rds:CreateDBCluster'
-                  - 'rds:DeleteDBCluster'
-                  - 'rds:ModifyDBCluster'
-                Resource: '*'
-              
-              # RDS - Criação de instâncias COM restrição de classe (controle de custos)
+              # RDS - Criação/modificação de instâncias COM restrição de classe (controle de custos)
               - Effect: Allow
                 Action:
                   - 'rds:CreateDBInstance'
@@ -177,38 +153,15 @@ Resources:
                       - 'db.r5.large'
                       - 'db.r5.xlarge'
               
-              # RDS - Deleção de instâncias sem restrições
+              # RDS - Todas as outras operações SEM restrições
               - Effect: Allow
-                Action:
-                  - 'rds:DeleteDBInstance'
+                Action: 'rds:*'
                 Resource: '*'
               
               # EC2 - Consultas e gerenciamento (sem restrições de leitura)
               - Effect: Allow
                 Action:
-                  - 'ec2:Describe*'
-                  - 'ec2:CreateSecurityGroup'
-                  - 'ec2:AuthorizeSecurityGroupIngress'
-                  - 'ec2:AuthorizeSecurityGroupEgress'
-                  - 'ec2:RevokeSecurityGroupIngress'
-                  - 'ec2:RevokeSecurityGroupEgress'
-                  - 'ec2:DeleteSecurityGroup'
-                  - 'ec2:CreateTags'
-                  - 'ec2:ModifySecurityGroupRules'
-                  - 'ec2:CreateKeyPair'
-                  - 'ec2:DeleteKeyPair'
-                  - 'ec2:ImportKeyPair'
-                  - 'ec2:CreateVolume'
-                  - 'ec2:DeleteVolume'
-                  - 'ec2:AttachVolume'
-                  - 'ec2:DetachVolume'
-                  - 'ec2:ModifyVolume'
-                  - 'ec2:CreateSnapshot'
-                  - 'ec2:DeleteSnapshot'
-                  - 'ec2:StopInstances'
-                  - 'ec2:StartInstances'
-                  - 'ec2:RebootInstances'
-                  - 'ec2:TerminateInstances'
+                  - 'ec2:*'
                 Resource: '*'
               
               # EC2 - RunInstances com restrição de tipo de instância (família t3 até xlarge)
@@ -281,22 +234,10 @@ Resources:
                 Action: 'sns:*'
                 Resource: '*'
               
-
-              
               # CloudTrail - Auditoria e compliance (Modulo 3)
               - Effect: Allow
                 Action:
-                  - 'cloudtrail:CreateTrail'
-                  - 'cloudtrail:DeleteTrail'
-                  - 'cloudtrail:StartLogging'
-                  - 'cloudtrail:StopLogging'
-                  - 'cloudtrail:UpdateTrail'
-                  - 'cloudtrail:GetTrailStatus'
-                  - 'cloudtrail:DescribeTrails'
-                  - 'cloudtrail:ListTrails'
-                  - 'cloudtrail:LookupEvents'
-                  - 'cloudtrail:PutEventSelectors'
-                  - 'cloudtrail:GetEventSelectors'
+                  - 'cloudtrail:*'
                 Resource: '*'
               
               # KMS - Acesso completo (sem restrições para treinamento)

@@ -48,8 +48,8 @@
 ### Via AWS CLI
 
 ```bash
-# Definir ID
-ID="seu-id"
+# A variável $ID já está configurada automaticamente
+# Verifique com: echo $ID
 
 # Modificar política de backup (substitua <seu-id>)
 aws docdb modify-db-cluster \
@@ -84,7 +84,8 @@ aws docdb describe-db-clusters \
 ### Via AWS CLI
 
 ```bash
-ID="seu-id"
+# A variável $ID já está configurada automaticamente
+# Verifique com: echo $ID
 
 # Criar snapshot (substitua <seu-id>)
 aws docdb create-db-cluster-snapshot \
@@ -140,7 +141,8 @@ Você precisa criar um cluster de desenvolvimento a partir do snapshot de produ�
 ### Via AWS CLI
 
 ```bash
-ID="seu-id"
+# A variável $ID já está configurada automaticamente
+# Verifique com: echo $ID
 
 # Obter o security group ID pelo nome
 SG_ID=$(aws ec2 describe-security-groups \
