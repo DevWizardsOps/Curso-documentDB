@@ -76,8 +76,14 @@ aws docdb failover-db-cluster \
 
 echo "Failover iniciado! Monitorando..."
 
-# Monitorar até completar (substitua <seu-id>)
-aws rds wait db-cluster-available --db-cluster-identifier $ID-lab-cluster-console
+# Monitorar até completar
+timeout 30 watch -n 2 "
+aws rds describe-db-clusters \
+--db-cluster-identifier ${ID}-lab-cluster-console \
+--query \"DBClusters[0].Status\" \
+--output text
+"
+
 
 echo "Failover concluído!"
 
@@ -100,21 +106,18 @@ chmod +x test-failover.sh
 
 ---
 
-## ⚡ Parte 3: Simular Falha de Instância
+## ⚡ Parte 3: Simular Failover direcionado (você escolhe a nova RW)
 
-### Reboot com Failover
+### Failover no cluster escolhendo quem será a instância RW
 
 ```bash
-# Reiniciar a instância primária (força failover)
-# A variável $PRIMARY foi definida na Parte 1
-aws docdb reboot-db-instance \
---db-instance-identifier $PRIMARY \
---force-failover
-
-echo "Reboot com failover iniciado..."
+# No exemplo estamos especificando que a master 
+aws docdb failover-db-cluster \
+--db-cluster-identifier ${ID}-lab-cluster-console \
+--target-db-instance-identifier $ID-lab-cluster-console
 
 # Monitorar o processo (substitua <seu-id>)
-watch -n 2 "aws docdb describe-db-clusters \
+timeout 60 watch -n 2 "aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter]' \
 --output table"
@@ -151,7 +154,7 @@ Veja o arquivo `exemplos/connection-failover.js`.
 ```javascript
 // exemplos/connection-failover.js
 const CONFIG = {
-    host: '<seu-id>-lab-cluster-console.cluster-xxxxx.us-east-1.docdb.amazonaws.com',
+    host: '<seu-id>-lab-cluster-console.cluster-xxxxx.us-east-2.docdb.amazonaws.com',
     // ...
 };
 ```
