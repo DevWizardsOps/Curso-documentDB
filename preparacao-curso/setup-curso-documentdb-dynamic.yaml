@@ -1,16 +1,3 @@
-#!/bin/bash
-
-# Script para gerar template CloudFormation dinamicamente
-# Uso: ./gerar-template.sh <numero-de-alunos>
-
-NUM_ALUNOS=${1:-2}
-
-if [ $NUM_ALUNOS -lt 1 ] || [ $NUM_ALUNOS -gt 20 ]; then
-    echo "Erro: Número de alunos deve ser entre 1 e 20"
-    exit 1
-fi
-
-cat > setup-curso-documentdb-dynamic.yaml << 'EOF_HEADER'
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Ambiente para Curso DocumentDB - Instancias EC2 + Usuarios IAM'
 
@@ -66,25 +53,7 @@ Mappings:
       AMI: ami-0c820c196a818d66a
 
 Conditions:
-EOF_HEADER
-
-# Gerar conditions para cada aluno
-for i in $(seq 1 $NUM_ALUNOS); do
-    ALUNO_NUM=$(printf "%02d" $i)
-    
-    if [ $i -eq 1 ]; then
-        echo "  CreateAluno${ALUNO_NUM}: !Not [!Equals [!Ref NumeroAlunos, 0]]" >> setup-curso-documentdb-dynamic.yaml
-    else
-        PREV=$((i - 1))
-        CONDITIONS="!Equals [!Ref NumeroAlunos, 0]"
-        for j in $(seq 1 $PREV); do
-            CONDITIONS="$CONDITIONS, !Equals [!Ref NumeroAlunos, $j]"
-        done
-        echo "  CreateAluno${ALUNO_NUM}: !Not [!Or [$CONDITIONS]]" >> setup-curso-documentdb-dynamic.yaml
-    fi
-done
-
-cat >> setup-curso-documentdb-dynamic.yaml << 'EOF_RESOURCES'
+  CreateAluno01: !Not [!Equals [!Ref NumeroAlunos, 0]]
 
 Resources:
   # Security Group para alunos
@@ -281,34 +250,27 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
-EOF_RESOURCES
 
-# Gerar recursos para cada aluno
-for i in $(seq 1 $NUM_ALUNOS); do
-    ALUNO_NUM=$(printf "%02d" $i)
-    
-    cat >> setup-curso-documentdb-dynamic.yaml << EOF_ALUNO
-
-  # Recursos do Aluno ${ALUNO_NUM}
-  Aluno${ALUNO_NUM}User:
-    Condition: CreateAluno${ALUNO_NUM}
+  # Recursos do Aluno 01
+  Aluno01User:
+    Condition: CreateAluno01
     Type: AWS::IAM::User
     Properties:
-      UserName: !Sub '\${AWS::StackName}-\${PrefixoAluno}${ALUNO_NUM}'
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}01'
       Groups:
         - !Ref CursoDocumentDBGroup
       LoginProfile:
-        Password: !Sub '{{resolve:secretsmanager:\${ConsolePasswordSecret}:SecretString:password}}'
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
         PasswordResetRequired: false
 
-  Aluno${ALUNO_NUM}AccessKey:
-    Condition: CreateAluno${ALUNO_NUM}
+  Aluno01AccessKey:
+    Condition: CreateAluno01
     Type: AWS::IAM::AccessKey
     Properties:
-      UserName: !Ref Aluno${ALUNO_NUM}User
+      UserName: !Ref Aluno01User
 
-  Aluno${ALUNO_NUM}Instance:
-    Condition: CreateAluno${ALUNO_NUM}
+  Aluno01Instance:
+    Condition: CreateAluno01
     Type: AWS::EC2::Instance
     Properties:
       ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
@@ -337,15 +299,15 @@ for i in $(seq 1 $NUM_ALUNOS); do
             yum install -y mongodb-mongosh
             
             # Criar usuário do aluno
-            useradd -m -s /bin/bash \${PrefixoAluno}${ALUNO_NUM}
-            echo "\${PrefixoAluno}${ALUNO_NUM} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+            useradd -m -s /bin/bash ${PrefixoAluno}01
+            echo "${PrefixoAluno}01 ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
             
             # Copiar chave SSH do ec2-user para o aluno (permite SSH direto)
-            mkdir -p /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh
-            cp /home/ec2-user/.ssh/authorized_keys /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh/authorized_keys
-            chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh
-            chmod 700 /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh
-            chmod 600 /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh/authorized_keys
+            mkdir -p /home/${PrefixoAluno}01/.ssh
+            cp /home/ec2-user/.ssh/authorized_keys /home/${PrefixoAluno}01/.ssh/authorized_keys
+            chown -R ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/.ssh
+            chmod 700 /home/${PrefixoAluno}01/.ssh
+            chmod 600 /home/${PrefixoAluno}01/.ssh/authorized_keys
             
             # Instalar Node.js
             curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
@@ -354,78 +316,70 @@ for i in $(seq 1 $NUM_ALUNOS); do
             yum install -y terraform
             
             # Configurar AWS CLI
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} aws configure set aws_access_key_id \${AccessKey}
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} aws configure set aws_secret_access_key \${SecretKey}
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} aws configure set default.region \${AWS::Region}
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} aws configure set default.output json
+            sudo -u ${PrefixoAluno}01 aws configure set aws_access_key_id ${AccessKey}
+            sudo -u ${PrefixoAluno}01 aws configure set aws_secret_access_key ${SecretKey}
+            sudo -u ${PrefixoAluno}01 aws configure set default.region ${AWS::Region}
+            sudo -u ${PrefixoAluno}01 aws configure set default.output json
             
             # Setup do ambiente
-            cd /home/\${PrefixoAluno}${ALUNO_NUM}
+            cd /home/${PrefixoAluno}01
             wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
-            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} global-bundle.pem
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} pip3 install --user boto3
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} \
-              git clone https://github.com/DevWizardsOps/Curso-documentDB.git
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} \
-              rm -fr /home/\${PrefixoAluno}${ALUNO_NUM}/Curso-documentDB/preparacao-curso
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} \
-              timedatectl set-timezone America/Recife
+            chown ${PrefixoAluno}01:${PrefixoAluno}01 global-bundle.pem
+            sudo -u ${PrefixoAluno}01 pip3 install --user boto3
+            sudo -u ${PrefixoAluno}01               git clone https://github.com/DevWizardsOps/Curso-documentDB.git
+            sudo -u ${PrefixoAluno}01               rm -fr /home/${PrefixoAluno}01/Curso-documentDB/preparacao-curso
+            sudo -u ${PrefixoAluno}01               timedatectl set-timezone America/Recife
             
             # Criar arquivo de boas-vindas (usando echo para evitar problemas com heredoc)
-            echo "╔══════════════════════════════════════════════════════════════╗" > /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "║              BEM-VINDO AO CURSO DOCUMENTDB                   ║" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "╚══════════════════════════════════════════════════════════════╝" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "Olá \${PrefixoAluno}${ALUNO_NUM}!" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "Seu ambiente está configurado e pronto para uso." >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "📋 INFORMAÇÕES DO AMBIENTE:" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "  - Usuário Linux: \${PrefixoAluno}${ALUNO_NUM}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "  - Região AWS: \${AWS::Region}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "🔧 FERRAMENTAS INSTALADAS:" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "  ✓ AWS CLI, MongoDB Shell, Node.js, Python, Terraform, Git" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "🚀 PRIMEIROS PASSOS:" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "  1. Teste: aws sts get-caller-identity" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "  2. Acesse: cd ~/Curso-documentDB" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "Bom curso! 🎓" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
+            echo "╔══════════════════════════════════════════════════════════════╗" > /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "║              BEM-VINDO AO CURSO DOCUMENTDB                   ║" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "╚══════════════════════════════════════════════════════════════╝" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "Olá ${PrefixoAluno}01!" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "Seu ambiente está configurado e pronto para uso." >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "📋 INFORMAÇÕES DO AMBIENTE:" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "  - Usuário Linux: ${PrefixoAluno}01" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "  - Região AWS: ${AWS::Region}" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "🔧 FERRAMENTAS INSTALADAS:" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "  ✓ AWS CLI, MongoDB Shell, Node.js, Python, Terraform, Git" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "🚀 PRIMEIROS PASSOS:" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "  1. Teste: aws sts get-caller-identity" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "  2. Acesse: cd ~/Curso-documentDB" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            echo "Bom curso! 🎓" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
+            chown ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/BEM-VINDO.txt
             
             # Adicionar customizações ao .bashrc
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "# Aliases úteis" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "alias ll='ls -lah'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "alias curso='cd ~/Curso-documentDB'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "alias awsid='aws sts get-caller-identity'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "# Mostrar boas-vindas no primeiro login" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "    cat ~/BEM-VINDO.txt" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "    touch ~/.welcome_shown" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "fi" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "export ID=\${PrefixoAluno}${ALUNO_NUM}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/
+            echo "" >> /home/${PrefixoAluno}01/.bashrc
+            echo "# Aliases úteis" >> /home/${PrefixoAluno}01/.bashrc
+            echo "alias ll='ls -lah'" >> /home/${PrefixoAluno}01/.bashrc
+            echo "alias curso='cd ~/Curso-documentDB'" >> /home/${PrefixoAluno}01/.bashrc
+            echo "alias awsid='aws sts get-caller-identity'" >> /home/${PrefixoAluno}01/.bashrc
+            echo "" >> /home/${PrefixoAluno}01/.bashrc
+            echo "# Mostrar boas-vindas no primeiro login" >> /home/${PrefixoAluno}01/.bashrc
+            echo "if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then" >> /home/${PrefixoAluno}01/.bashrc
+            echo "    cat ~/BEM-VINDO.txt" >> /home/${PrefixoAluno}01/.bashrc
+            echo "    touch ~/.welcome_shown" >> /home/${PrefixoAluno}01/.bashrc
+            echo "fi" >> /home/${PrefixoAluno}01/.bashrc
+            echo "" >> /home/${PrefixoAluno}01/.bashrc
+            echo "export ID=${PrefixoAluno}01" >> /home/${PrefixoAluno}01/.bashrc
+            chown ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/.bashrc
+            chown -R ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/
             
-            echo "Setup completo em \$(date)" > /home/\${PrefixoAluno}${ALUNO_NUM}/setup-complete.txt
-            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/setup-complete.txt
-          - AccessKey: !Ref Aluno${ALUNO_NUM}AccessKey
-            SecretKey: !GetAtt Aluno${ALUNO_NUM}AccessKey.SecretAccessKey
+            echo "Setup completo em $(date)" > /home/${PrefixoAluno}01/setup-complete.txt
+            chown ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/setup-complete.txt
+          - AccessKey: !Ref Aluno01AccessKey
+            SecretKey: !GetAtt Aluno01AccessKey.SecretAccessKey
             PrefixoAluno: !Ref PrefixoAluno
       Tags:
         - Key: Name
-          Value: !Sub '\${PrefixoAluno}${ALUNO_NUM}-instance'
+          Value: !Sub '${PrefixoAluno}01-instance'
         - Key: Purpose
           Value: 'Curso DocumentDB'
-EOF_ALUNO
-done
-
-# Gerar Outputs
-cat >> setup-curso-documentdb-dynamic.yaml << 'EOF_OUTPUTS'
 
 Outputs:
   SecurityGroupDocumentDB:
@@ -438,26 +392,15 @@ Outputs:
     Description: 'Nome do bucket S3'
     Value: !Ref LabsBucket
 
-EOF_OUTPUTS
-
-# Gerar outputs para cada aluno
-for i in $(seq 1 $NUM_ALUNOS); do
-    ALUNO_NUM=$(printf "%02d" $i)
-    
-    cat >> setup-curso-documentdb-dynamic.yaml << EOF_OUTPUT
-  Aluno${ALUNO_NUM}Info:
-    Condition: CreateAluno${ALUNO_NUM}
-    Description: 'IP e credenciais do Aluno ${ALUNO_NUM}'
+  Aluno01Info:
+    Condition: CreateAluno01
+    Description: 'IP e credenciais do Aluno 01'
     Value: !Sub |
-      IP: \${Aluno${ALUNO_NUM}Instance.PublicIp}
-      IAM User: \${Aluno${ALUNO_NUM}User}
-      Console Password: Armazenada no Secrets Manager (\${ConsolePasswordSecret})
-      SSH: ssh -i \${KeyPairName}.pem ec2-user@\${Aluno${ALUNO_NUM}Instance.PublicIp}
+      IP: ${Aluno01Instance.PublicIp}
+      IAM User: ${Aluno01User}
+      Console Password: Armazenada no Secrets Manager (${ConsolePasswordSecret})
+      SSH: ssh -i ${KeyPairName}.pem ec2-user@${Aluno01Instance.PublicIp}
 
-EOF_OUTPUT
-done
-
-cat >> setup-curso-documentdb-dynamic.yaml << 'EOF_FOOTER'
   ConsolePasswordSecretName:
     Description: 'Nome do secret contendo a senha do console'
     Value: !Ref ConsolePasswordSecret
@@ -479,6 +422,3 @@ cat >> setup-curso-documentdb-dynamic.yaml << 'EOF_FOOTER'
       Comando: ssh -i ${KeyPairName}.pem ec2-user@IP-PUBLICO
       Depois: sudo su - ${PrefixoAluno}XX
       AWS CLI já configurado!
-EOF_FOOTER
-
-echo "Template gerado: setup-curso-documentdb-dynamic.yaml (para $NUM_ALUNOS alunos)"
