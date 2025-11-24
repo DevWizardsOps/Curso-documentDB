@@ -362,14 +362,13 @@ for i in $(seq 1 $NUM_ALUNOS); do
             # Setup do ambiente
             cd /home/\${PrefixoAluno}${ALUNO_NUM}
             wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
-            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} global-bundle.pem
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} pip3 install --user boto3
+            sudo -u \${PrefixoAluno}${ALUNO_NUM} sudo pip3 install --user boto3
             sudo -u \${PrefixoAluno}${ALUNO_NUM} \
               git clone https://github.com/DevWizardsOps/Curso-documentDB.git
             sudo -u \${PrefixoAluno}${ALUNO_NUM} \
-              rm -fr /home/\${PrefixoAluno}${ALUNO_NUM}/Curso-documentDB/preparacao-curso
+              sudo rm -fr /home/\${PrefixoAluno}${ALUNO_NUM}/Curso-documentDB/preparacao-curso
             sudo -u \${PrefixoAluno}${ALUNO_NUM} \
-              timedatectl set-timezone America/Recife
+              sudo timedatectl set-timezone America/Recife
             
             # Criar arquivo de boas-vindas (usando echo para evitar problemas com heredoc)
             echo "╔══════════════════════════════════════════════════════════════╗" > /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
@@ -392,27 +391,25 @@ for i in $(seq 1 $NUM_ALUNOS); do
             echo "  2. Acesse: cd ~/Curso-documentDB" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
             echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
             echo "Bom curso! 🎓" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
             
             # Adicionar customizações ao .bashrc
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "# Aliases úteis" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "alias ll='ls -lah'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "alias curso='cd ~/Curso-documentDB'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "alias awsid='aws sts get-caller-identity'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "# Mostrar boas-vindas no primeiro login" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "    cat ~/BEM-VINDO.txt" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "    touch ~/.welcome_shown" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "fi" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            echo "export ID=\${PrefixoAluno}${ALUNO_NUM}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/
+            sudo echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "# Aliases úteis" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "alias ll='ls -lah'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "alias curso='cd ~/Curso-documentDB'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "alias awsid='aws sts get-caller-identity'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "# Mostrar boas-vindas no primeiro login" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "    cat ~/BEM-VINDO.txt" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "    touch ~/.welcome_shown" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "fi" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo echo "export ID=\${PrefixoAluno}${ALUNO_NUM}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
+            sudo chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/
             
             echo "Setup completo em \$(date)" > /home/\${PrefixoAluno}${ALUNO_NUM}/setup-complete.txt
-            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/setup-complete.txt
+            sudo chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/setup-complete.txt
           - AccessKey: !Ref Aluno${ALUNO_NUM}AccessKey
             SecretKey: !GetAtt Aluno${ALUNO_NUM}AccessKey.SecretAccessKey
             PrefixoAluno: !Ref PrefixoAluno
