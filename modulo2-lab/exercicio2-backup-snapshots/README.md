@@ -51,14 +51,14 @@
 # A variável $ID já está configurada automaticamente
 # Verifique com: echo $ID
 
-# Modificar política de backup (substitua <seu-id>)
+# Modificar política de backup 
 aws docdb modify-db-cluster \
 --db-cluster-identifier $ID-lab-cluster-console \
 --backup-retention-period 7 \
 --preferred-backup-window "02:00-04:00" \
 --apply-immediately
 
-# Verificar configuração (substitua <seu-id>)
+# Verificar configuração 
 aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].[BackupRetentionPeriod, PreferredBackupWindow]' \
@@ -87,19 +87,19 @@ aws docdb describe-db-clusters \
 # A variável $ID já está configurada automaticamente
 # Verifique com: echo $ID
 
-# Criar snapshot (substitua <seu-id>)
+# Criar snapshot 
 aws docdb create-db-cluster-snapshot \
 --db-cluster-snapshot-identifier $ID-lab-snapshot-manual-001 \
 --db-cluster-identifier $ID-lab-cluster-console \
 --tags Key=Purpose,Value=LabExercise Key=Student,Value=$ID
 
-# Verificar progresso (substitua <seu-id>)
+# Verificar progresso 
 aws docdb describe-db-cluster-snapshots \
 --db-cluster-snapshot-identifier $ID-lab-snapshot-manual-001 \
 --query 'DBClusterSnapshots[0].[Status, PercentProgress]' \
 --output table
 
-# Listar todos os seus snapshots manuais (substitua <seu-id>)
+# Listar todos os seus snapshots manuais 
 aws docdb describe-db-cluster-snapshots \
 --snapshot-type manual \
 --query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '$ID')].[DBClusterSnapshotIdentifier, Status, SnapshotCreateTime]" \
@@ -160,21 +160,21 @@ aws docdb restore-db-cluster-from-snapshot \
 --db-subnet-group-name $ID-docdb-lab-subnet-group \
 --vpc-security-group-ids $SG_ID
 
-# Criar instância no cluster restaurado (substitua <seu-id>)
+# Criar instância no cluster restaurado 
 aws docdb create-db-instance \
 --db-instance-identifier $ID-lab-cluster-restored-1 \
 --db-instance-class db.t3.medium \
 --db-cluster-identifier $ID-lab-cluster-restored \
 --engine docdb
 
-# Criar instância no cluster restaurado (substitua <seu-id>)
+# Criar instância no cluster restaurado 
 aws docdb create-db-instance \
 --db-instance-identifier $ID-lab-cluster-restored-1 \
 --db-instance-class db.t3.medium \
 --db-cluster-identifier $ID-lab-cluster-restored-1 \
 --engine docdb
 
-# Verificar restauração (substitua <seu-id>)
+# Verificar restauração 
 aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-restored \
 --query 'DBClusters[0].Status'
@@ -209,7 +209,7 @@ Permite restaurar o cluster para qualquer ponto no tempo dentro do período de r
 ### Via AWS CLI
 
 ```bash
-# Obter janela de restauração disponível (substitua <seu-id>)
+# Obter janela de restauração disponível 
 aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].[EarliestRestorableTime, LatestRestorableTime]' \
@@ -223,14 +223,14 @@ aws docdb restore-db-cluster-to-point-in-time \
 --db-subnet-group-name $ID-docdb-lab-subnet-group \
 --vpc-security-group-ids $SG_ID
 
-# Adicionar instância (substitua <seu-id>)
+# Adicionar instância 
 aws docdb create-db-instance \
 --db-instance-identifier $ID-lab-cluster-pitr-1 \
 --db-instance-class db.t3.medium \
 --db-cluster-identifier $ID-lab-cluster-pitr \
 --engine docdb
 
-# Adicionar segunda instância (substitua <seu-id>)
+# Adicionar segunda instância 
 aws docdb create-db-instance \
 --db-instance-identifier $ID-lab-cluster-pitr-2 \
 --db-instance-class db.t3.medium \
@@ -245,11 +245,11 @@ aws docdb create-db-instance \
 ### Listar Snapshots
 
 ```bash
-# Listar snapshots do seu cluster (substitua <seu-id>)
+# Listar snapshots do seu cluster 
 aws docdb describe-db-cluster-snapshots \
 --db-cluster-identifier $ID-lab-cluster-console
 
-# Listar todos os seus snapshots manuais (substitua <seu-id>)
+# Listar todos os seus snapshots manuais 
 aws docdb describe-db-cluster-snapshots \
 --snapshot-type manual \
 --query "DBClusterSnapshots[?starts_with(DBClusterSnapshotIdentifier, '$ID')].DBClusterSnapshotIdentifier"
@@ -284,10 +284,10 @@ aws docdb delete-db-instance --db-instance-identifier $ID-lab-cluster-pitr-2
 # Detelar todas cluster restaurado PITR
 aws docdb delete-db-cluster --db-cluster-identifier $ID-lab-cluster-pitr --skip-final-snapshot
 
-# Deletar snapshot manual (substitua <seu-id>)
+# Deletar snapshot manual 
 aws docdb delete-db-cluster-snapshot --db-cluster-snapshot-identifier $ID-lab-snapshot-manual-001
 
-# Deletar snapshot manual da console (substitua <seu-id>)
+# Deletar snapshot manual da console 
 aws docdb delete-db-cluster-snapshot --db-cluster-snapshot-identifier $ID-lab-snapshot-manual-console-001
 
 ```

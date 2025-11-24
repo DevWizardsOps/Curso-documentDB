@@ -114,7 +114,7 @@ aws cloudwatch list-dashboards \
 ACCOUNT_ID=396739911713
 REGION=us-east-2
 
-# Criar tópico SNS (substitua <seu-id>)
+# Criar tópico SNS 
 aws sns create-topic \
 --name $ID-documentdb-alerts
 
@@ -187,7 +187,7 @@ aws cloudwatch put-metric-alarm \
 ### Criar Regra para Failover
 
 ```bash
-# Criar regra EventBridge (substitua <seu-id>)
+# Criar regra EventBridge 
 aws events put-rule \
 --name "${ID}-documentdb-failover-events" \
 --description "Detectar eventos de failover para o aluno ${ID}" \

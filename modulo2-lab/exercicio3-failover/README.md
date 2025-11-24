@@ -32,7 +32,7 @@ Failover é o processo de promover uma réplica a primária quando a instância 
 # A variável $ID já está configurada automaticamente
 # Verifique com: echo $ID
 
-# Listar instâncias do seu cluster (substitua <seu-id>)
+# Listar instâncias do seu cluster 
 aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter, PromotionTier]' \
@@ -42,7 +42,7 @@ aws docdb describe-db-clusters \
 ### Passo 2: Identificar a Primária Atual
 
 ```bash
-# Obter a instância primária (substitua <seu-id>)
+# Obter a instância primária 
 PRIMARY=$(aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
@@ -70,7 +70,7 @@ echo "Instância Primária Atual: $PRIMARY"
 # A variável $ID já está configurada automaticamente
 # Verifique com: echo $ID
 
-# Executar failover manual (substitua <seu-id>)
+# Executar failover manual 
 aws docdb failover-db-cluster \
 --db-cluster-identifier $ID-lab-cluster-console
 
@@ -87,7 +87,7 @@ aws rds describe-db-clusters \
 
 echo "Failover concluído!"
 
-# Verificar nova primária (substitua <seu-id>)
+# Verificar nova primária 
 NEW_PRIMARY=$(aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
@@ -116,7 +116,7 @@ aws docdb failover-db-cluster \
 --db-cluster-identifier ${ID}-lab-cluster-console \
 --target-db-instance-identifier $ID-lab-cluster-console
 
-# Monitorar o processo (substitua <seu-id>)
+# Monitorar o processo 
 timeout 60 watch -n 2 "aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].DBClusterMembers[*].[DBInstanceIdentifier, IsClusterWriter]' \
@@ -133,10 +133,10 @@ timeout 60 watch -n 2 "aws docdb describe-db-clusters \
 cd scripts/
 chmod +x monitor-endpoints.sh
 
-# Em um terminal, inicie o monitoramento (substitua <seu-id>)
+# Em um terminal, inicie o monitoramento 
 ./monitor-endpoints.sh $ID-lab-cluster-console
 
-# Em outro terminal, execute o failover (substitua <seu-id>)
+# Em outro terminal, execute o failover 
 aws docdb failover-db-cluster \
 --db-cluster-identifier $ID-lab-cluster-console
 ```
@@ -162,8 +162,6 @@ const CONFIG = {
 Depois de editar, execute os comandos:
 
 ```bash
-ID=<seu-id>
-
 cd exemplos/
 sudo dnf install npm wget -y
 npm install mongodb
@@ -172,7 +170,7 @@ wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 # Executar aplicação de teste
 node connection-failover.js
 
-# Em outro terminal, force um failover (substitua <seu-id>)
+# Em outro terminal, force um failover 
 aws docdb failover-db-cluster \
 --db-cluster-identifier $ID-lab-cluster-console
 ```

@@ -19,7 +19,7 @@
 ### Via AWS CLI
 
 ```bash
-# Configurar janela de manutenção (substitua <seu-id>)
+# Configurar janela de manutenção 
 aws docdb modify-db-cluster \
 --db-cluster-identifier $ID-lab-cluster-console \
 --preferred-maintenance-window "sun:03:00-sun:03:30" \
@@ -33,7 +33,7 @@ aws docdb modify-db-cluster \
 ### Criar Backup Antes do Upgrade
 
 ```bash
-# Criar snapshot manual (substitua <seu-id>)
+# Criar snapshot manual 
 aws docdb create-db-cluster-snapshot \
 --db-cluster-snapshot-identifier $ID-pre-upgrade-snapshot-$(date +%Y%m%d) \
 --db-cluster-identifier $ID-lab-cluster-console
@@ -65,7 +65,7 @@ chmod +x upgrade-cluster.sh
 ### Escalonamento Vertical (Resize)
 
 ```bash
-# Modificar instance class (substitua <seu-id>)
+# Modificar instance class 
 aws docdb modify-db-instance \
 --db-instance-identifier $ID-lab-cluster-console-1 \
 --db-instance-class db.r5.large \
@@ -75,7 +75,7 @@ aws docdb modify-db-instance \
 ### Escalonamento Horizontal (Adicionar Réplica)
 
 ```bash
-# Adicionar nova réplica (substitua <seu-id>)
+# Adicionar nova réplica 
 aws docdb create-db-instance \
 --db-instance-identifier $ID-lab-cluster-console-4 \
 --db-instance-class db.t3.medium \
@@ -90,13 +90,13 @@ aws docdb create-db-instance \
 ### Criar e Aplicar Custom Parameter Group
 
 ```bash
-# Criar parameter group customizado (substitua <seu-id>)
+# Criar parameter group customizado 
 aws docdb create-db-cluster-parameter-group \
 --db-cluster-parameter-group-name $ID-custom-docdb-params \
 --db-parameter-group-family docdb5.0 \
 --description "Custom parameters for <seu-id> cluster"
 
-# Aplicar novo parameter group (substitua <seu-id>)
+# Aplicar novo parameter group 
 aws docdb modify-db-cluster \
 --db-cluster-identifier $ID-lab-cluster-console \
 --db-cluster-parameter-group-name $ID-custom-docdb-params \

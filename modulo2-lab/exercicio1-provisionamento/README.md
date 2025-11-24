@@ -79,11 +79,11 @@
 # A variável $ID já está configurada automaticamente
 # Verifique com: echo $ID
 
-# Listar clusters (substitua <seu-id>)
+# Listar clusters 
 aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console
 
-# Obter endpoint de conexão (substitua <seu-id>)
+# Obter endpoint de conexão 
 aws docdb describe-db-clusters \
 --db-cluster-identifier $ID-lab-cluster-console \
 --query 'DBClusters[0].Endpoint' \
