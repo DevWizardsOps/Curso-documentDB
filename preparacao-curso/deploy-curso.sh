@@ -458,6 +458,24 @@ if [ $? -eq 0 ]; then
         echo ""
         echo -e "${GREEN}✨ Ambiente pronto para o curso! ✨${NC}"
         
+        # Mostrar todos os outputs do CloudFormation
+        echo ""
+        echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+        echo -e "${BLUE}           OUTPUTS DO CLOUDFORMATION                           ${NC}"
+        echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        
+        aws cloudformation describe-stacks \
+            --stack-name $STACK_NAME \
+            --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+            --output text | while IFS=$'\t' read -r key value; do
+            echo -e "${GREEN}${key}:${NC}"
+            echo "$value" | sed 's/^/  /'
+            echo ""
+        done
+        
+        echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+        
     else
         error "Falha no deployment da stack"
         exit 1
