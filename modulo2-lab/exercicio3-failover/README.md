@@ -163,7 +163,6 @@ Depois de editar, execute os comandos:
 
 ```bash
 cd exemplos/
-sudo dnf install npm wget -y
 npm install mongodb
 wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 
