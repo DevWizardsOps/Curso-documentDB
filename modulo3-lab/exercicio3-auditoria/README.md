@@ -69,7 +69,7 @@ Neste exercício, vamos habilitar e inspecionar os logs de auditoria para o Docu
   --username docdbadmin \
   --password Lab12345! \
   --retryWrites false
-  
+
   # 2. Dentro do mongosh, execute algumas operações que serão auditadas:
   use testdb
   db.users.insertOne({name: "João", email: "joao@example.com"})
@@ -251,3 +251,17 @@ Neste exercício, vamos habilitar e inspecionar os logs de auditoria para o Docu
     }
   }
   ```
+
+## ✅ Validação do Exercício
+
+### Validação Automatizada
+
+Execute o script de validação para verificar automaticamente se o exercício foi concluído:
+
+```bash
+# A variável $ID já está configurada automaticamente
+# Verifique com: echo $ID
+
+# Executar validação
+/home/$ID/Curso-documentDB/modulo3-lab/exercicio3-auditoria/grade_exercicio3.sh
+```

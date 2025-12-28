@@ -423,7 +423,7 @@ Execute o script de validação:
 
 ```bash
 # Executa o grade para avaliar atividades
-./grade_exercicio2.sh
+/home/$ID/Curso-documentDB/modulo4-lab/exercicio2-planos-execucao/grade_exercicio2.sh
 ```
 
 ### Itens Verificados:

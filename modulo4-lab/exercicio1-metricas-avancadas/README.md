@@ -135,7 +135,7 @@ aws cloudwatch list-dashboards \
 
 ---
 
-## � Parrte 3: Conceitos de Performance Baseline
+## Parte 3: Conceitos de Performance Baseline
 
 ### Entendendo Baselines de Performance
 
@@ -272,7 +272,7 @@ Execute o script de validação:
 
 ```bash
 # Executa o grade para avaliar atividades
-./grade_exercicio1.sh
+/home/$ID/Curso-documentDB/modulo4-lab/exercicio1-metricas-avancadas/grade_exercicio1.sh
 ```
 
 ### Itens Verificados:
