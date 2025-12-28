@@ -578,7 +578,7 @@ Execute o script de validação:
 
 ```bash
 # Executa o grade para avaliar atividades
-./grade_exercicio_backup.sh
+/home/$ID/Curso-documentDB/modulo5-lab/exercicio-backup-s3/grade_exercicio_backup.sh
 ```
 
 ### Itens Verificados:
