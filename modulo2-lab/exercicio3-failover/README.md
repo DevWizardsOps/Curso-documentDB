@@ -19,7 +19,7 @@
 
 ### O que é Failover?
 
-Failover é o processo de promover uma réplica a primária quando a instância primária atual falha ou fica indisponível.
+O failover é o processo de comutação automática para um sistema, componente de hardware ou rede que está em espera (standby), caso o sistema inicial falhe. O objetivo principal desse mecanismo é reduzir ou eliminar completamente o impacto sobre os usuários, garantindo que o serviço continue operando mesmo diante de uma falha
 
 ---
 
@@ -39,7 +39,7 @@ aws docdb describe-db-clusters \
 --output table
 ```
 
-### Passo 2: Identificar a Primária Atual
+### Passo 2: Identificar a instâcia primária atual
 
 ```bash
 # Obter a instância primária 
@@ -182,7 +182,7 @@ Execute o script de validação a partir do diretório home do usuário, no dire
 
 ```bash
 # Executa o grade para avaliar atividades
-/home/aluno01/Curso-documentDB/modulo2-lab/exercicio3-failover/grade_exercicio3.sh
+/home/$ID/Curso-documentDB/modulo2-lab/exercicio3-failover/grade_exercicio3.sh
 ```
 
 ---

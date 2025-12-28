@@ -234,7 +234,7 @@ Execute o script de validação para verificar automaticamente se o exercício f
 
 ```bash
 # Executa o grade para avaliar atividades
-/home/aluno01/Curso-documentDB/modulo3-lab/exercicio1-autenticacao-nativa/grade_exercicio1.sh
+/home/$ID/Curso-documentDB/modulo3-lab/exercicio1-autenticacao-nativa/grade_exercicio1.sh
 ```
 
 ### Validação Automatizada
@@ -243,10 +243,10 @@ Execute o script de validação para verificar automaticamente se o exercício f
 
 ```bash
 # Executar validação
-/home/aluno01/Curso-documentDB/modulo3-lab/exercicio1-autenticacao-nativa/grade_exercicio1.sh
+/home/$ID/Curso-documentDB/modulo3-lab/exercicio1-autenticacao-nativa/grade_exercicio1.sh
 
 # Ou passar o ID diretamente
-./grade_exercicio1.sh "seu-nome"
+./grade_exercicio1.sh $ID
 ```
 
 O script irá verificar:

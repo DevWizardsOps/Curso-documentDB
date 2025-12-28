@@ -71,7 +71,7 @@ Se preferir que cada aluno tenha sua própria chave:
 
 ```bash
 # Na instância do aluno
-echo "ssh-rsa AAAAB3... chave-publica-do-aluno" >> /home/aluno01/.ssh/authorized_keys
+echo "ssh-rsa AAAAB3... chave-publica-do-aluno" >> /home/$ID/.ssh/authorized_keys
 ```
 
 ## 🔒 Segurança

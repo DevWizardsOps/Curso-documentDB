@@ -252,7 +252,7 @@ aws ec2 describe-security-groups \
   --output json
 ```
 
-### 3. Criar Security Group para Aplicação Cliente
+### 4. Criar Security Group para Aplicação Cliente
 
 #### Via AWS Console:
 
@@ -318,7 +318,7 @@ aws ec2 authorize-security-group-egress \
 echo "Regra de saída adicionada: $APP_SG_ID -> $DOCDB_SG:27017"
 ```
 
-### 4. Configurar Regras Restritivas no Security Group do DocumentDB
+### 5. Configurar Regras Restritivas no Security Group do DocumentDB
 
 #### Via AWS Console:
 
@@ -468,11 +468,12 @@ Execute o script de validação para verificar automaticamente se o exercício f
 # Verifique com: echo $ID
 
 # Executar validação
-chmod +x grade_exercicio2.sh
-./grade_exercicio2.sh
+chmod +x /home/$ID/Curso-documentDB/modulo3-lab/exercicio2-integracao-rede/grade_exercicio2.sh
+
+/home/$ID/Curso-documentDB/modulo3-lab/exercicio2-integracao-rede/grade_exercicio2.sh
 
 # Ou passar o ID diretamente
-./grade_exercicio2.sh "seu-nome"
+/home/$ID/Curso-documentDB/modulo3-lab/exercicio2-integracao-rede/grade_exercicio2.sh $ID
 ```
 
 O script irá verificar:

@@ -263,7 +263,7 @@ Execute o script de validação a partir do diretório home do usuário, no dire
 
 ```bash
 # Executa o grade para avaliar atividades
-/home/aluno01/Curso-documentDB/modulo2-lab/exercicio2-backup-snapshots/grade_exercicio2.sh
+/home/$ID/Curso-documentDB/modulo2-lab/exercicio2-backup-snapshots/grade_exercicio2.sh
 ```
 
 ---
@@ -271,17 +271,17 @@ Execute o script de validação a partir do diretório home do usuário, no dire
 ## 🧹 Limpeza
 
 ```bash
-# Detelar todas as instancias do cluster restaurado
+# Deletar todas as instâncias do cluster restaurado
 aws docdb delete-db-instance --db-instance-identifier $ID-lab-cluster-restored-1
 
-# Detelar todas cluster restaurado
+# Deletar cluster restaurado
 aws docdb delete-db-cluster --db-cluster-identifier $ID-lab-cluster-restored --skip-final-snapshot
 
-# Detelar todas as instancias do cluster restaurado PITR
+# Deletar todas as instâncias do cluster restaurado PITR
 aws docdb delete-db-instance --db-instance-identifier $ID-lab-cluster-pitr-1
 aws docdb delete-db-instance --db-instance-identifier $ID-lab-cluster-pitr-2
 
-# Detelar todas cluster restaurado PITR
+# Deletar cluster restaurado PITR
 aws docdb delete-db-cluster --db-cluster-identifier $ID-lab-cluster-pitr --skip-final-snapshot
 
 # Deletar snapshot manual 

@@ -205,7 +205,7 @@ Execute o script de validação a partir do diretório home do usuário, dentro 
 
 ```bash
 # Executa o grade para avaliar atividades
-/home/aluno01/Curso-documentDB/modulo2-lab/exercicio1-provisionamento/grade_exercicio1.sh
+/home/$ID/Curso-documentDB/modulo2-lab/exercicio1-provisionamento/grade_exercicio1.sh
 ```
 
 ---
