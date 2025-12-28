@@ -69,10 +69,8 @@ Neste exercício, vamos habilitar e inspecionar os logs de auditoria para o Docu
   --username docdbadmin \
   --password Lab12345! \
   --retryWrites false
-  ```
-
+  
   # 2. Dentro do mongosh, execute algumas operações que serão auditadas:
-  ```bash
   use testdb
   db.users.insertOne({name: "João", email: "joao@example.com"})
   db.users.find({name: "João"})

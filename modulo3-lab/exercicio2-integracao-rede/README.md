@@ -574,11 +574,6 @@ aws ec2 authorize-security-group-ingress \
 | **DocumentDB** | Privada | Nenhum | Muito Alta | Dados de clientes, produtos |
 | **Bastion Host** | Pública | Direto (IGW) | Alta** | Acesso para DBAs e DevOps |
 
-*App Server: NAT Gateway apenas se precisar de APIs externas
-**Bastion Host: Requer configuração de segurança rigorosa
-
-*Bastion Host requer configuração de segurança rigorosa
-
 ## 🧹 Limpeza (Opcional)
 
 ```bash
