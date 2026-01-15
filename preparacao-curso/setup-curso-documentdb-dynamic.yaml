@@ -34,13 +34,17 @@ Parameters:
   ConsolePasswordSecret:
     Type: String
     Description: 'Nome do secret no Secrets Manager contendo a senha do console'
+    
+  LabsBucketName:
+    Type: String
+    Description: 'Nome do bucket S3 para scripts e labs (ja deve existir)'
 
 Mappings:
   RegionMap:
     us-east-1:
       AMI: ami-0c02fb55956c7d316
     us-east-2:
-      AMI: ami-0f924dc71d44d23e2
+      AMI: ami-0807bd3aff0ae7273
     us-west-1:
       AMI: ami-0d9858aa3c6322f73
     us-west-2:
@@ -54,6 +58,22 @@ Mappings:
 
 Conditions:
   CreateAluno01: !Not [!Equals [!Ref NumeroAlunos, 0]]
+  CreateAluno02: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1]]]
+  CreateAluno03: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2]]]
+  CreateAluno04: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3]]]
+  CreateAluno05: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4]]]
+  CreateAluno06: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5]]]
+  CreateAluno07: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6]]]
+  CreateAluno08: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7]]]
+  CreateAluno09: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7], !Equals [!Ref NumeroAlunos, 8]]]
+  CreateAluno10: !Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7], !Equals [!Ref NumeroAlunos, 8], !Equals [!Ref NumeroAlunos, 9]]]
+  CreateAluno11: !And [!Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7], !Equals [!Ref NumeroAlunos, 8], !Equals [!Ref NumeroAlunos, 9]]], !Not [!Or [!Equals [!Ref NumeroAlunos, 10]]]]
+  CreateAluno12: !And [!Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7], !Equals [!Ref NumeroAlunos, 8], !Equals [!Ref NumeroAlunos, 9]]], !Not [!Or [!Equals [!Ref NumeroAlunos, 10], !Equals [!Ref NumeroAlunos, 11]]]]
+  CreateAluno13: !And [!Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7], !Equals [!Ref NumeroAlunos, 8], !Equals [!Ref NumeroAlunos, 9]]], !Not [!Or [!Equals [!Ref NumeroAlunos, 10], !Equals [!Ref NumeroAlunos, 11], !Equals [!Ref NumeroAlunos, 12]]]]
+  CreateAluno14: !And [!Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7], !Equals [!Ref NumeroAlunos, 8], !Equals [!Ref NumeroAlunos, 9]]], !Not [!Or [!Equals [!Ref NumeroAlunos, 10], !Equals [!Ref NumeroAlunos, 11], !Equals [!Ref NumeroAlunos, 12], !Equals [!Ref NumeroAlunos, 13]]]]
+  CreateAluno15: !And [!Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7], !Equals [!Ref NumeroAlunos, 8], !Equals [!Ref NumeroAlunos, 9]]], !Not [!Or [!Equals [!Ref NumeroAlunos, 10], !Equals [!Ref NumeroAlunos, 11], !Equals [!Ref NumeroAlunos, 12], !Equals [!Ref NumeroAlunos, 13], !Equals [!Ref NumeroAlunos, 14]]]]
+  CreateAluno16: !And [!Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7], !Equals [!Ref NumeroAlunos, 8], !Equals [!Ref NumeroAlunos, 9]]], !Not [!Or [!Equals [!Ref NumeroAlunos, 10], !Equals [!Ref NumeroAlunos, 11], !Equals [!Ref NumeroAlunos, 12], !Equals [!Ref NumeroAlunos, 13], !Equals [!Ref NumeroAlunos, 14], !Equals [!Ref NumeroAlunos, 15]]]]
+  CreateAluno17: !And [!Not [!Or [!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7], !Equals [!Ref NumeroAlunos, 8], !Equals [!Ref NumeroAlunos, 9]]], !Not [!Or [!Equals [!Ref NumeroAlunos, 10], !Equals [!Ref NumeroAlunos, 11], !Equals [!Ref NumeroAlunos, 12], !Equals [!Ref NumeroAlunos, 13], !Equals [!Ref NumeroAlunos, 14], !Equals [!Ref NumeroAlunos, 15], !Equals [!Ref NumeroAlunos, 16]]]]
 
 Resources:
   # Security Group para alunos
@@ -232,23 +252,24 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: S3SetupScriptAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                Resource:
+                  - !Sub 'arn:aws:s3:::${LabsBucketName}'
+                  - !Sub 'arn:aws:s3:::${LabsBucketName}/*'
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
         - !Ref EC2Role
-
-  # S3 Bucket para laboratorios
-  LabsBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub '${AWS::StackName}-labs-${AWS::AccountId}'
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
 
 
   # Recursos do Aluno 01
@@ -284,104 +305,921 @@ Resources:
         Fn::Base64: !Sub 
           - |
             #!/bin/bash
-            yum update -y
-            yum install -y aws-cli git
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
             
-            # Instalar MongoDB Shell
-            cat > /etc/yum.repos.d/mongodb-org-7.0.repo << 'EOFMONGO'
-            [mongodb-org-7.0]
-            name=MongoDB Repository
-            baseurl=https://repo.mongodb.org/yum/amazon/2/mongodb-org/7.0/x86_64/
-            gpgcheck=1
-            enabled=1
-            gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
-            EOFMONGO
-            yum install -y mongodb-mongosh
-            
-            # Criar usuário do aluno
-            useradd -m -s /bin/bash ${PrefixoAluno}01
-            echo "${PrefixoAluno}01 ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-            
-            # Copiar chave SSH do ec2-user para o aluno (permite SSH direto)
-            mkdir -p /home/${PrefixoAluno}01/.ssh
-            cp /home/ec2-user/.ssh/authorized_keys /home/${PrefixoAluno}01/.ssh/authorized_keys
-            chown -R ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/.ssh
-            chmod 700 /home/${PrefixoAluno}01/.ssh
-            chmod 600 /home/${PrefixoAluno}01/.ssh/authorized_keys
-            
-            # Instalar Node.js
-            curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-            yum install -y nodejs python3 python3-pip yum-utils
-            yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-            yum install -y terraform
-            
-            # Configurar AWS CLI
-            sudo -u ${PrefixoAluno}01 aws configure set aws_access_key_id ${AccessKey}
-            sudo -u ${PrefixoAluno}01 aws configure set aws_secret_access_key ${SecretKey}
-            sudo -u ${PrefixoAluno}01 aws configure set default.region ${AWS::Region}
-            sudo -u ${PrefixoAluno}01 aws configure set default.output json
-            
-            # Setup do ambiente
-            cd /home/${PrefixoAluno}01
-            wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
-            chown ${PrefixoAluno}01:${PrefixoAluno}01 global-bundle.pem
-            sudo -u ${PrefixoAluno}01 pip3 install --user boto3
-            sudo -u ${PrefixoAluno}01               git clone https://github.com/DevWizardsOps/Curso-documentDB.git
-            sudo -u ${PrefixoAluno}01               rm -fr /home/${PrefixoAluno}01/Curso-documentDB/preparacao-curso
-            sudo -u ${PrefixoAluno}01               timedatectl set-timezone America/Recife
-            
-            # Criar arquivo de boas-vindas (usando echo para evitar problemas com heredoc)
-            echo "╔══════════════════════════════════════════════════════════════╗" > /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "║              BEM-VINDO AO CURSO DOCUMENTDB                   ║" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "╚══════════════════════════════════════════════════════════════╝" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "Olá ${PrefixoAluno}01!" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "Seu ambiente está configurado e pronto para uso." >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "📋 INFORMAÇÕES DO AMBIENTE:" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "  - Usuário Linux: ${PrefixoAluno}01" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "  - Região AWS: ${AWS::Region}" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "🔧 FERRAMENTAS INSTALADAS:" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "  ✓ AWS CLI, MongoDB Shell, Node.js, Python, Terraform, Git" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "🚀 PRIMEIROS PASSOS:" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "  1. Teste: aws sts get-caller-identity" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "  2. Acesse: cd ~/Curso-documentDB" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            echo "Bom curso! 🎓" >> /home/${PrefixoAluno}01/BEM-VINDO.txt
-            chown ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/BEM-VINDO.txt
-            
-            # Adicionar customizações ao .bashrc
-            echo "" >> /home/${PrefixoAluno}01/.bashrc
-            echo "# Aliases úteis" >> /home/${PrefixoAluno}01/.bashrc
-            echo "alias ll='ls -lah'" >> /home/${PrefixoAluno}01/.bashrc
-            echo "alias curso='cd ~/Curso-documentDB'" >> /home/${PrefixoAluno}01/.bashrc
-            echo "alias awsid='aws sts get-caller-identity'" >> /home/${PrefixoAluno}01/.bashrc
-            echo "" >> /home/${PrefixoAluno}01/.bashrc
-            echo "# Mostrar boas-vindas no primeiro login" >> /home/${PrefixoAluno}01/.bashrc
-            echo "if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then" >> /home/${PrefixoAluno}01/.bashrc
-            echo "    cat ~/BEM-VINDO.txt" >> /home/${PrefixoAluno}01/.bashrc
-            echo "    touch ~/.welcome_shown" >> /home/${PrefixoAluno}01/.bashrc
-            echo "fi" >> /home/${PrefixoAluno}01/.bashrc
-            echo "" >> /home/${PrefixoAluno}01/.bashrc
-            echo "export ID=${PrefixoAluno}01" >> /home/${PrefixoAluno}01/.bashrc
-            chown ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/.bashrc
-            chown -R ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/
-            
-            echo "Setup completo em $(date)" > /home/${PrefixoAluno}01/setup-complete.txt
-            chown ${PrefixoAluno}01:${PrefixoAluno}01 /home/${PrefixoAluno}01/setup-complete.txt
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}01" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
           - AccessKey: !Ref Aluno01AccessKey
             SecretKey: !GetAtt Aluno01AccessKey.SecretAccessKey
             PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
       Tags:
         - Key: Name
           Value: !Sub '${PrefixoAluno}01-instance'
         - Key: Purpose
           Value: 'Curso DocumentDB'
 
+  # Recursos do Aluno 02
+  Aluno02User:
+    Condition: CreateAluno02
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}02'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno02AccessKey:
+    Condition: CreateAluno02
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno02User
+
+  Aluno02Instance:
+    Condition: CreateAluno02
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}02" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno02AccessKey
+            SecretKey: !GetAtt Aluno02AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}02-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 03
+  Aluno03User:
+    Condition: CreateAluno03
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}03'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno03AccessKey:
+    Condition: CreateAluno03
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno03User
+
+  Aluno03Instance:
+    Condition: CreateAluno03
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}03" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno03AccessKey
+            SecretKey: !GetAtt Aluno03AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}03-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 04
+  Aluno04User:
+    Condition: CreateAluno04
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}04'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno04AccessKey:
+    Condition: CreateAluno04
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno04User
+
+  Aluno04Instance:
+    Condition: CreateAluno04
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}04" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno04AccessKey
+            SecretKey: !GetAtt Aluno04AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}04-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 05
+  Aluno05User:
+    Condition: CreateAluno05
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}05'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno05AccessKey:
+    Condition: CreateAluno05
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno05User
+
+  Aluno05Instance:
+    Condition: CreateAluno05
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}05" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno05AccessKey
+            SecretKey: !GetAtt Aluno05AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}05-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 06
+  Aluno06User:
+    Condition: CreateAluno06
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}06'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno06AccessKey:
+    Condition: CreateAluno06
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno06User
+
+  Aluno06Instance:
+    Condition: CreateAluno06
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}06" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno06AccessKey
+            SecretKey: !GetAtt Aluno06AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}06-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 07
+  Aluno07User:
+    Condition: CreateAluno07
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}07'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno07AccessKey:
+    Condition: CreateAluno07
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno07User
+
+  Aluno07Instance:
+    Condition: CreateAluno07
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}07" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno07AccessKey
+            SecretKey: !GetAtt Aluno07AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}07-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 08
+  Aluno08User:
+    Condition: CreateAluno08
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}08'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno08AccessKey:
+    Condition: CreateAluno08
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno08User
+
+  Aluno08Instance:
+    Condition: CreateAluno08
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}08" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno08AccessKey
+            SecretKey: !GetAtt Aluno08AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}08-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 09
+  Aluno09User:
+    Condition: CreateAluno09
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}09'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno09AccessKey:
+    Condition: CreateAluno09
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno09User
+
+  Aluno09Instance:
+    Condition: CreateAluno09
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}09" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno09AccessKey
+            SecretKey: !GetAtt Aluno09AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}09-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 10
+  Aluno10User:
+    Condition: CreateAluno10
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}10'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno10AccessKey:
+    Condition: CreateAluno10
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno10User
+
+  Aluno10Instance:
+    Condition: CreateAluno10
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}10" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno10AccessKey
+            SecretKey: !GetAtt Aluno10AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}10-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 11
+  Aluno11User:
+    Condition: CreateAluno11
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}11'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno11AccessKey:
+    Condition: CreateAluno11
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno11User
+
+  Aluno11Instance:
+    Condition: CreateAluno11
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}11" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno11AccessKey
+            SecretKey: !GetAtt Aluno11AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}11-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 12
+  Aluno12User:
+    Condition: CreateAluno12
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}12'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno12AccessKey:
+    Condition: CreateAluno12
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno12User
+
+  Aluno12Instance:
+    Condition: CreateAluno12
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}12" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno12AccessKey
+            SecretKey: !GetAtt Aluno12AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}12-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 13
+  Aluno13User:
+    Condition: CreateAluno13
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}13'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno13AccessKey:
+    Condition: CreateAluno13
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno13User
+
+  Aluno13Instance:
+    Condition: CreateAluno13
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}13" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno13AccessKey
+            SecretKey: !GetAtt Aluno13AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}13-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 14
+  Aluno14User:
+    Condition: CreateAluno14
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}14'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno14AccessKey:
+    Condition: CreateAluno14
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno14User
+
+  Aluno14Instance:
+    Condition: CreateAluno14
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}14" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno14AccessKey
+            SecretKey: !GetAtt Aluno14AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}14-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 15
+  Aluno15User:
+    Condition: CreateAluno15
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}15'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno15AccessKey:
+    Condition: CreateAluno15
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno15User
+
+  Aluno15Instance:
+    Condition: CreateAluno15
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}15" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno15AccessKey
+            SecretKey: !GetAtt Aluno15AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}15-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 16
+  Aluno16User:
+    Condition: CreateAluno16
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}16'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno16AccessKey:
+    Condition: CreateAluno16
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno16User
+
+  Aluno16Instance:
+    Condition: CreateAluno16
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}16" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno16AccessKey
+            SecretKey: !GetAtt Aluno16AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}16-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
+  # Recursos do Aluno 17
+  Aluno17User:
+    Condition: CreateAluno17
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${AWS::StackName}-${PrefixoAluno}17'
+      Groups:
+        - !Ref CursoDocumentDBGroup
+      LoginProfile:
+        Password: !Sub '{{resolve:secretsmanager:${ConsolePasswordSecret}:SecretString:password}}'
+        PasswordResetRequired: false
+
+  Aluno17AccessKey:
+    Condition: CreateAluno17
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref Aluno17User
+
+  Aluno17Instance:
+    Condition: CreateAluno17
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref AlunosSecurityGroup
+      SubnetId: !Ref SubnetId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub 
+          - |
+            #!/bin/bash
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "${PrefixoAluno}17" "${AWS::Region}" "${AccessKey}" "${SecretKey}" >> /var/log/setup-aluno.log 2>&1
+          - AccessKey: !Ref Aluno17AccessKey
+            SecretKey: !GetAtt Aluno17AccessKey.SecretAccessKey
+            PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
+      Tags:
+        - Key: Name
+          Value: !Sub '${PrefixoAluno}17-instance'
+        - Key: Purpose
+          Value: 'Curso DocumentDB'
+
 Outputs:
+  StackName:
+    Description: 'Nome da Stack'
+    Value: !Ref AWS::StackName
+    
+  Regiao:
+    Description: 'Regiao AWS'
+    Value: !Ref AWS::Region
+    
+  AccountId:
+    Description: 'Account ID'
+    Value: !Ref AWS::AccountId
+    
   SecurityGroupDocumentDB:
     Description: 'Security Group ID para DocumentDB'
     Value: !Ref DocumentDBSecurityGroup
@@ -389,36 +1227,105 @@ Outputs:
       Name: !Sub '${AWS::StackName}-DocumentDB-SG'
 
   LabsBucketName:
-    Description: 'Nome do bucket S3'
-    Value: !Ref LabsBucket
-
-  Aluno01Info:
-    Condition: CreateAluno01
-    Description: 'IP e credenciais do Aluno 01'
-    Value: !Sub |
-      IP: ${Aluno01Instance.PublicIp}
-      IAM User: ${Aluno01User}
-      Console Password: Armazenada no Secrets Manager (${ConsolePasswordSecret})
-      SSH: ssh -i ${KeyPairName}.pem ec2-user@${Aluno01Instance.PublicIp}
-
-  ConsolePasswordSecretName:
+    Description: 'Nome do bucket S3 para labs'
+    Value: !Ref LabsBucketName
+  
+  ConsolePasswordSecret:
     Description: 'Nome do secret contendo a senha do console'
     Value: !Ref ConsolePasswordSecret
     Export:
       Name: !Sub '${AWS::StackName}-ConsolePassword-Secret'
+      
+  SecretsManagerURL:
+    Description: 'Link para o Secrets Manager'
+    Value: !Sub 'https://console.aws.amazon.com/secretsmanager/home?region=${AWS::Region}#!/secret?name=${ConsolePasswordSecret}'
+    
+  KeyPairName:
+    Description: 'Nome da chave SSH'
+    Value: !Ref KeyPairName
 
-  InstrucoesConexao:
-    Description: 'Como conectar as instancias'
-    Value: !Sub |
-      === ACESSO AO CONSOLE AWS ===
-      URL: https://${AWS::AccountId}.signin.aws.amazon.com/console
-      Senha: Armazenada no Secrets Manager
-      
-      Para recuperar a senha:
-      aws secretsmanager get-secret-value --secret-id ${ConsolePasswordSecret} --query SecretString --output text | jq -r .password
-      
-      === ACESSO SSH ===
-      Chave SSH: ${KeyPairName}.pem
-      Comando: ssh -i ${KeyPairName}.pem ec2-user@IP-PUBLICO
-      Depois: sudo su - ${PrefixoAluno}XX
-      AWS CLI já configurado!
+  Aluno01IP:
+    Condition: CreateAluno01
+    Description: 'IP publico do Aluno 01'
+    Value: !GetAtt Aluno01Instance.PublicIp
+
+  Aluno02IP:
+    Condition: CreateAluno02
+    Description: 'IP publico do Aluno 02'
+    Value: !GetAtt Aluno02Instance.PublicIp
+
+  Aluno03IP:
+    Condition: CreateAluno03
+    Description: 'IP publico do Aluno 03'
+    Value: !GetAtt Aluno03Instance.PublicIp
+
+  Aluno04IP:
+    Condition: CreateAluno04
+    Description: 'IP publico do Aluno 04'
+    Value: !GetAtt Aluno04Instance.PublicIp
+
+  Aluno05IP:
+    Condition: CreateAluno05
+    Description: 'IP publico do Aluno 05'
+    Value: !GetAtt Aluno05Instance.PublicIp
+
+  Aluno06IP:
+    Condition: CreateAluno06
+    Description: 'IP publico do Aluno 06'
+    Value: !GetAtt Aluno06Instance.PublicIp
+
+  Aluno07IP:
+    Condition: CreateAluno07
+    Description: 'IP publico do Aluno 07'
+    Value: !GetAtt Aluno07Instance.PublicIp
+
+  Aluno08IP:
+    Condition: CreateAluno08
+    Description: 'IP publico do Aluno 08'
+    Value: !GetAtt Aluno08Instance.PublicIp
+
+  Aluno09IP:
+    Condition: CreateAluno09
+    Description: 'IP publico do Aluno 09'
+    Value: !GetAtt Aluno09Instance.PublicIp
+
+  Aluno10IP:
+    Condition: CreateAluno10
+    Description: 'IP publico do Aluno 10'
+    Value: !GetAtt Aluno10Instance.PublicIp
+
+  Aluno11IP:
+    Condition: CreateAluno11
+    Description: 'IP publico do Aluno 11'
+    Value: !GetAtt Aluno11Instance.PublicIp
+
+  Aluno12IP:
+    Condition: CreateAluno12
+    Description: 'IP publico do Aluno 12'
+    Value: !GetAtt Aluno12Instance.PublicIp
+
+  Aluno13IP:
+    Condition: CreateAluno13
+    Description: 'IP publico do Aluno 13'
+    Value: !GetAtt Aluno13Instance.PublicIp
+
+  Aluno14IP:
+    Condition: CreateAluno14
+    Description: 'IP publico do Aluno 14'
+    Value: !GetAtt Aluno14Instance.PublicIp
+
+  Aluno15IP:
+    Condition: CreateAluno15
+    Description: 'IP publico do Aluno 15'
+    Value: !GetAtt Aluno15Instance.PublicIp
+
+  Aluno16IP:
+    Condition: CreateAluno16
+    Description: 'IP publico do Aluno 16'
+    Value: !GetAtt Aluno16Instance.PublicIp
+
+  Aluno17IP:
+    Condition: CreateAluno17
+    Description: 'IP publico do Aluno 17'
+    Value: !GetAtt Aluno17Instance.PublicIp
+

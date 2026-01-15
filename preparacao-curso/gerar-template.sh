@@ -47,6 +47,10 @@ Parameters:
   ConsolePasswordSecret:
     Type: String
     Description: 'Nome do secret no Secrets Manager contendo a senha do console'
+    
+  LabsBucketName:
+    Type: String
+    Description: 'Nome do bucket S3 para scripts e labs (ja deve existir)'
 
 Mappings:
   RegionMap:
@@ -68,19 +72,49 @@ Mappings:
 Conditions:
 EOF_HEADER
 
-# Gerar conditions para cada aluno
+# Gerar conditions para cada aluno usando abordagem que funciona com limite de 10 do !Or
 for i in $(seq 1 $NUM_ALUNOS); do
     ALUNO_NUM=$(printf "%02d" $i)
     
     if [ $i -eq 1 ]; then
         echo "  CreateAluno${ALUNO_NUM}: !Not [!Equals [!Ref NumeroAlunos, 0]]" >> setup-curso-documentdb-dynamic.yaml
-    else
+    elif [ $i -le 10 ]; then
+        # Para alunos 2-10: verificar se NumeroAlunos >= i (NumeroAlunos NÃO está em [0..i-1])
         PREV=$((i - 1))
-        CONDITIONS="!Equals [!Ref NumeroAlunos, 0]"
-        for j in $(seq 1 $PREV); do
-            CONDITIONS="$CONDITIONS, !Equals [!Ref NumeroAlunos, $j]"
+        CONDITIONS=""
+        for j in $(seq 0 $PREV); do
+            if [ -z "$CONDITIONS" ]; then
+                CONDITIONS="!Equals [!Ref NumeroAlunos, $j]"
+            else
+                CONDITIONS="$CONDITIONS, !Equals [!Ref NumeroAlunos, $j]"
+            fi
         done
         echo "  CreateAluno${ALUNO_NUM}: !Not [!Or [$CONDITIONS]]" >> setup-curso-documentdb-dynamic.yaml
+    else
+        # Para alunos 11-20: usar !And com múltiplos !Not !Or para evitar limite de 10
+        PREV=$((i - 1))
+        
+        # Primeira parte: [0..9]
+        CONDITIONS1="!Equals [!Ref NumeroAlunos, 0], !Equals [!Ref NumeroAlunos, 1], !Equals [!Ref NumeroAlunos, 2], !Equals [!Ref NumeroAlunos, 3], !Equals [!Ref NumeroAlunos, 4], !Equals [!Ref NumeroAlunos, 5], !Equals [!Ref NumeroAlunos, 6], !Equals [!Ref NumeroAlunos, 7], !Equals [!Ref NumeroAlunos, 8], !Equals [!Ref NumeroAlunos, 9]"
+        
+        # Segunda parte: [10..PREV]
+        CONDITIONS2=""
+        COUNT2=0
+        for j in $(seq 10 $PREV); do
+            if [ -z "$CONDITIONS2" ]; then
+                CONDITIONS2="!Equals [!Ref NumeroAlunos, $j]"
+            else
+                CONDITIONS2="$CONDITIONS2, !Equals [!Ref NumeroAlunos, $j]"
+            fi
+            COUNT2=$((COUNT2 + 1))
+        done
+        
+        # Se temos apenas 1 elemento na segunda parte, não usar !Or
+        if [ $COUNT2 -eq 1 ]; then
+            echo "  CreateAluno${ALUNO_NUM}: !And [!Not [!Or [$CONDITIONS1]], !Not [$CONDITIONS2]]" >> setup-curso-documentdb-dynamic.yaml
+        else
+            echo "  CreateAluno${ALUNO_NUM}: !And [!Not [!Or [$CONDITIONS1]], !Not [!Or [$CONDITIONS2]]]" >> setup-curso-documentdb-dynamic.yaml
+        fi
     fi
 done
 
@@ -263,23 +297,24 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: S3SetupScriptAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                Resource:
+                  - !Sub 'arn:aws:s3:::${LabsBucketName}'
+                  - !Sub 'arn:aws:s3:::${LabsBucketName}/*'
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
         - !Ref EC2Role
-
-  # S3 Bucket para laboratorios
-  LabsBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub '${AWS::StackName}-labs-${AWS::AccountId}'
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
 
 EOF_RESOURCES
 
@@ -322,97 +357,22 @@ for i in $(seq 1 $NUM_ALUNOS); do
         Fn::Base64: !Sub 
           - |
             #!/bin/bash
-            yum update -y
-            yum install -y aws-cli git
+            # Aguardar IAM instance profile estar disponível (máximo 30s)
+            for i in {1..30}; do
+              if curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
             
-            # Instalar MongoDB Shell
-            cat > /etc/yum.repos.d/mongodb-org-7.0.repo << 'EOFMONGO'
-            [mongodb-org-7.0]
-            name=MongoDB Repository
-            baseurl=https://repo.mongodb.org/yum/amazon/2/mongodb-org/7.0/x86_64/
-            gpgcheck=1
-            enabled=1
-            gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
-            EOFMONGO
-            yum install -y mongodb-mongosh
-            
-            # Criar usuário do aluno
-            useradd -m -s /bin/bash \${PrefixoAluno}${ALUNO_NUM}
-            echo "\${PrefixoAluno}${ALUNO_NUM} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-            
-            # Copiar chave SSH do ec2-user para o aluno (permite SSH direto)
-            mkdir -p /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh
-            cp /home/ec2-user/.ssh/authorized_keys /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh/authorized_keys
-            chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh
-            chmod 700 /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh
-            chmod 600 /home/\${PrefixoAluno}${ALUNO_NUM}/.ssh/authorized_keys
-            
-            # Instalar Node.js
-            curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-            yum install -y npm wget nodejs python3 python3-pip yum-utils
-            yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-            yum install -y terraform
-            
-            # Configurar AWS CLI
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} aws configure set aws_access_key_id \${AccessKey}
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} aws configure set aws_secret_access_key \${SecretKey}
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} aws configure set default.region \${AWS::Region}
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} aws configure set default.output json
-            
-            # Setup do ambiente
-            cd /home/\${PrefixoAluno}${ALUNO_NUM}
-            wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
-            chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} global-bundle.pem
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} pip3 install --user boto3
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} \
-              git clone https://github.com/DevWizardsOps/Curso-documentDB.git
-            sudo -u \${PrefixoAluno}${ALUNO_NUM} \
-              rm -fr /home/\${PrefixoAluno}${ALUNO_NUM}/Curso-documentDB/preparacao-curso
-            timedatectl set-timezone America/Recife
-            
-            # Criar arquivo de boas-vindas (usando echo para evitar problemas com heredoc)
-            echo "╔══════════════════════════════════════════════════════════════╗" > /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "║              BEM-VINDO AO CURSO DOCUMENTDB                   ║" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "╚══════════════════════════════════════════════════════════════╝" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "Olá \${PrefixoAluno}${ALUNO_NUM}!" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "Seu ambiente está configurado e pronto para uso." >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "📋 INFORMAÇÕES DO AMBIENTE:" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "  - Usuário Linux: \${PrefixoAluno}${ALUNO_NUM}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "  - Região AWS: \${AWS::Region}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "🔧 FERRAMENTAS INSTALADAS:" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "  ✓ AWS CLI, MongoDB Shell, Node.js, Python, Terraform, Git" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "🚀 PRIMEIROS PASSOS:" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "  1. Teste: aws sts get-caller-identity" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "  2. Acesse: cd ~/Curso-documentDB" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            echo "Bom curso! 🎓" >> /home/\${PrefixoAluno}${ALUNO_NUM}/BEM-VINDO.txt
-            
-            # Adicionar customizações ao .bashrc
-            sudo echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "# Aliases úteis" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "alias ll='ls -lah'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "alias curso='cd ~/Curso-documentDB'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "alias awsid='aws sts get-caller-identity'" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "# Mostrar boas-vindas no primeiro login" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "if [ -f ~/BEM-VINDO.txt ] && [ ! -f ~/.welcome_shown ]; then" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "    cat ~/BEM-VINDO.txt" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "    touch ~/.welcome_shown" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "fi" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo echo "export ID=\${PrefixoAluno}${ALUNO_NUM}" >> /home/\${PrefixoAluno}${ALUNO_NUM}/.bashrc
-            sudo chown -R \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/
-            
-            echo "Setup completo em \$(date)" > /home/\${PrefixoAluno}${ALUNO_NUM}/setup-complete.txt
-            sudo chown \${PrefixoAluno}${ALUNO_NUM}:\${PrefixoAluno}${ALUNO_NUM} /home/\${PrefixoAluno}${ALUNO_NUM}/setup-complete.txt
+            # Baixar e executar script de setup do S3
+            aws s3 cp s3://\${BucketName}/scripts/setup-aluno.sh /tmp/setup-aluno.sh
+            chmod +x /tmp/setup-aluno.sh
+            /tmp/setup-aluno.sh "\${PrefixoAluno}${ALUNO_NUM}" "\${AWS::Region}" "\${AccessKey}" "\${SecretKey}" >> /var/log/setup-aluno.log 2>&1
           - AccessKey: !Ref Aluno${ALUNO_NUM}AccessKey
             SecretKey: !GetAtt Aluno${ALUNO_NUM}AccessKey.SecretAccessKey
             PrefixoAluno: !Ref PrefixoAluno
+            BucketName: !Ref LabsBucketName
       Tags:
         - Key: Name
           Value: !Sub '\${PrefixoAluno}${ALUNO_NUM}-instance'
@@ -421,10 +381,22 @@ for i in $(seq 1 $NUM_ALUNOS); do
 EOF_ALUNO
 done
 
-# Gerar Outputs
+# Gerar Outputs SIMPLIFICADOS
 cat >> setup-curso-documentdb-dynamic.yaml << 'EOF_OUTPUTS'
 
 Outputs:
+  StackName:
+    Description: 'Nome da Stack'
+    Value: !Ref AWS::StackName
+    
+  Regiao:
+    Description: 'Regiao AWS'
+    Value: !Ref AWS::Region
+    
+  AccountId:
+    Description: 'Account ID'
+    Value: !Ref AWS::AccountId
+    
   SecurityGroupDocumentDB:
     Description: 'Security Group ID para DocumentDB'
     Value: !Ref DocumentDBSecurityGroup
@@ -432,79 +404,36 @@ Outputs:
       Name: !Sub '${AWS::StackName}-DocumentDB-SG'
 
   LabsBucketName:
-    Description: 'Nome do bucket S3'
-    Value: !Ref LabsBucket
-
-EOF_OUTPUTS
-
-# Gerar outputs para cada aluno
-for i in $(seq 1 $NUM_ALUNOS); do
-    ALUNO_NUM=$(printf "%02d" $i)
-    
-    cat >> setup-curso-documentdb-dynamic.yaml << EOF_OUTPUT
-  Aluno${ALUNO_NUM}Info:
-    Condition: CreateAluno${ALUNO_NUM}
-    Description: 'Informacoes de acesso do Aluno ${ALUNO_NUM}'
-    Value: !Sub |
-      ===============================================================
-      ALUNO ${ALUNO_NUM} - \${PrefixoAluno}${ALUNO_NUM}
-      ===============================================================
-      
-      CONSOLE AWS:
-        URL: https://\${AWS::AccountId}.signin.aws.amazon.com/console
-        Usuario IAM: \${AWS::StackName}-\${PrefixoAluno}${ALUNO_NUM}
-        Senha: Armazenada no Secrets Manager (\${ConsolePasswordSecret})
-      
-      INSTANCIA EC2:
-        IP Publico: \${Aluno${ALUNO_NUM}Instance.PublicIp}
-        Usuario Linux: \${PrefixoAluno}${ALUNO_NUM}
-      
-      ACESSO SSH:
-        Chave: \${KeyPairName}.pem
-        Comando: ssh -i \${KeyPairName}.pem \${PrefixoAluno}${ALUNO_NUM}@\${Aluno${ALUNO_NUM}Instance.PublicIp}
-      
-      AWS CLI ja configurado na instancia!
-
-EOF_OUTPUT
-done
-
-cat >> setup-curso-documentdb-dynamic.yaml << 'EOF_FOOTER'
-  ConsolePasswordSecretName:
+    Description: 'Nome do bucket S3 para labs'
+    Value: !Ref LabsBucketName
+  
+  ConsolePasswordSecret:
     Description: 'Nome do secret contendo a senha do console'
     Value: !Ref ConsolePasswordSecret
     Export:
       Name: !Sub '${AWS::StackName}-ConsolePassword-Secret'
-
+      
   SecretsManagerURL:
-    Description: 'Link direto para o Secrets Manager'
+    Description: 'Link para o Secrets Manager'
     Value: !Sub 'https://console.aws.amazon.com/secretsmanager/home?region=${AWS::Region}#!/secret?name=${ConsolePasswordSecret}'
+    
+  KeyPairName:
+    Description: 'Nome da chave SSH'
+    Value: !Ref KeyPairName
 
-  InstrucoesGerais:
-    Description: 'Instrucoes gerais do curso'
-    Value: !Sub |
-      ===============================================================
-      CURSO DOCUMENTDB - INSTRUCOES GERAIS
-      ===============================================================
-      
-      SENHA DO CONSOLE:
-        Link Direto: https://console.aws.amazon.com/secretsmanager/home?region=${AWS::Region}#!/secret?name=${ConsolePasswordSecret}
-        
-        Via CLI:
-        aws secretsmanager get-secret-value \
-          --secret-id ${ConsolePasswordSecret} \
-          --query SecretString --output text | jq -r .password
-      
-      CHAVE SSH:
-        Nome: ${KeyPairName}.pem
-        Localizacao: Mesmo diretorio do script de deploy
-      
-      RECURSOS CRIADOS:
-        - Security Group DocumentDB: ${DocumentDBSecurityGroup}
-        - Bucket S3 Labs: ${LabsBucket}
-        - Regiao: ${AWS::Region}
-      
-      DICA: Veja os outputs individuais de cada aluno acima!
-      RELATORIO WEB: Verifique o link gerado pelo script de deploy
-EOF_FOOTER
+EOF_OUTPUTS
+
+# Gerar outputs APENAS com IPs públicos para cada aluno
+for i in $(seq 1 $NUM_ALUNOS); do
+    ALUNO_NUM=$(printf "%02d" $i)
+    
+    cat >> setup-curso-documentdb-dynamic.yaml << EOF_OUTPUT
+  Aluno${ALUNO_NUM}IP:
+    Condition: CreateAluno${ALUNO_NUM}
+    Description: 'IP publico do Aluno ${ALUNO_NUM}'
+    Value: !GetAtt Aluno${ALUNO_NUM}Instance.PublicIp
+
+EOF_OUTPUT
+done
 
 echo "Template gerado: setup-curso-documentdb-dynamic.yaml (para $NUM_ALUNOS alunos)"

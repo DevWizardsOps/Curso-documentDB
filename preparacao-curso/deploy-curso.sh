@@ -371,6 +371,40 @@ fi
 
 success "Template gerado com sucesso"
 
+# Criar bucket S3 para labs se não existir (antes do deploy)
+LABS_BUCKET="${STACK_NAME}-labs-${ACCOUNT_ID}"
+log "Verificando bucket S3 para scripts: $LABS_BUCKET"
+
+if ! aws s3 ls "s3://${LABS_BUCKET}" 2>&1 | grep -q 'NoSuchBucket'; then
+    log "Bucket já existe: ${LABS_BUCKET}"
+else
+    log "Criando bucket S3: ${LABS_BUCKET}"
+    aws s3 mb "s3://${LABS_BUCKET}" --region $REGION
+    
+    # Configurar bloqueio de acesso público
+    aws s3api put-public-access-block \
+        --bucket ${LABS_BUCKET} \
+        --public-access-block-configuration \
+        "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+    
+    success "Bucket criado: ${LABS_BUCKET}"
+fi
+
+# Upload do script de setup para o S3
+log "Fazendo upload do script de setup para o S3..."
+if [ -f "setup-aluno.sh" ]; then
+    aws s3 cp setup-aluno.sh "s3://${LABS_BUCKET}/scripts/setup-aluno.sh"
+    if [ $? -eq 0 ]; then
+        success "Script de setup enviado para S3"
+    else
+        error "Falha ao enviar script para S3"
+        exit 1
+    fi
+else
+    error "Arquivo setup-aluno.sh não encontrado!"
+    exit 1
+fi
+
 # Deploy da stack
 log "Iniciando deploy da stack CloudFormation..."
 
@@ -388,6 +422,7 @@ log "  SubnetId: $SUBNET_ID"
 log "  AllowedCIDR: $ALLOWED_CIDR"
 log "  KeyPairName: $KEY_NAME"
 log "  ConsolePasswordSecret: $SECRET_NAME"
+log "  LabsBucketName: $LABS_BUCKET"
 
 aws cloudformation $ACTION \
     --stack-name "$STACK_NAME" \
@@ -400,6 +435,7 @@ aws cloudformation $ACTION \
         ParameterKey=AllowedCIDR,ParameterValue="$ALLOWED_CIDR" \
         ParameterKey=KeyPairName,ParameterValue="$KEY_NAME" \
         ParameterKey=ConsolePasswordSecret,ParameterValue="$SECRET_NAME" \
+        ParameterKey=LabsBucketName,ParameterValue="$LABS_BUCKET" \
     --capabilities CAPABILITY_NAMED_IAM \
     --tags \
         Key=Purpose,Value="Curso DocumentDB" \
@@ -501,12 +537,14 @@ if [ $? -eq 0 ]; then
         echo ""
         echo -e "${GREEN}✨ Ambiente pronto para o curso! ✨${NC}"
         
-        # Gerar arquivo HTML com as informações
+        # Gerar arquivo HTML com as informações (SEM A SENHA)
         log "Gerando relatório HTML..."
         
         HTML_FILE="curso-documentdb-info-$(date +%Y%m%d-%H%M%S).html"
         
-        cat > $HTML_FILE << 'HTML_HEADER'
+        # Criar HTML completo localmente PRIMEIRO
+        {
+            cat << 'HTML_HEADER'
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -522,7 +560,7 @@ if [ $? -eq 0 ]; then
             min-height: 100vh;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
@@ -567,14 +605,34 @@ if [ $? -eq 0 ]; then
         .info-item strong {
             color: #333;
             display: inline-block;
-            min-width: 150px;
+            min-width: 180px;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .warning-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        .warning-box p {
+            color: #856404;
+            line-height: 1.6;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
         }
         .aluno-card {
             background: white;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
             padding: 25px;
-            margin-bottom: 20px;
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .aluno-card:hover {
@@ -597,6 +655,7 @@ if [ $? -eq 0 ]; then
             font-family: 'Courier New', monospace;
             margin: 10px 0;
             overflow-x: auto;
+            font-size: 0.9em;
         }
         .badge {
             display: inline-block;
@@ -606,6 +665,11 @@ if [ $? -eq 0 ]; then
             border-radius: 20px;
             font-size: 0.9em;
             margin-right: 10px;
+            font-weight: bold;
+        }
+        .badge-warning {
+            background: #ffc107;
+            color: #333;
         }
         .footer {
             background: #f8f9fa;
@@ -619,6 +683,10 @@ if [ $? -eq 0 ]; then
             .container { box-shadow: none; }
             .aluno-card { page-break-inside: avoid; }
         }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            .info-item strong { display: block; margin-bottom: 5px; }
+        }
     </style>
 </head>
 <body>
@@ -627,142 +695,150 @@ if [ $? -eq 0 ]; then
             <h1>🎓 Curso DocumentDB</h1>
             <p>Informações de Acesso ao Ambiente AWS</p>
 HTML_HEADER
-        
-        echo "            <p>Gerado em: $(date '+%d/%m/%Y às %H:%M:%S')</p>" >> $HTML_FILE
-        echo "        </div>" >> $HTML_FILE
-        echo "        <div class=\"content\">" >> $HTML_FILE
-        
-        # Preparar links
-        SECRET_CONSOLE_URL="https://console.aws.amazon.com/secretsmanager/home?region=${REGION}#!/secret?name=${SECRET_NAME}"
-        
-        # Link da chave SSH no S3
-        SSH_KEY_LINK="Arquivo local: $KEY_FILE"
-        if [ -f ".ssh-key-info" ]; then
-            source .ssh-key-info
-            SSH_KEY_LINK="<a href='https://s3.console.aws.amazon.com/s3/object/${S3_BUCKET}?region=${REGION}&prefix=${S3_KEY_PATH}' target='_blank'>Download do S3</a>"
-        fi
-        
-        # Informações gerais
-        cat >> $HTML_FILE << HTML_GENERAL
-            <div class="info-section">
-                <h2>📋 Informações Gerais</h2>
-                <div class="info-item"><strong>Stack Name:</strong> $STACK_NAME</div>
-                <div class="info-item"><strong>Região AWS:</strong> $REGION</div>
-                <div class="info-item"><strong>Account ID:</strong> $ACCOUNT_ID</div>
-                <div class="info-item"><strong>Número de Alunos:</strong> $NUM_ALUNOS</div>
-            </div>
             
-            <div class="info-section">
-                <h2>🌐 Acesso ao Console AWS</h2>
-                <div class="info-item">
-                    <strong>URL:</strong> 
-                    <a href="https://${ACCOUNT_ID}.signin.aws.amazon.com/console" target="_blank">
-                        https://${ACCOUNT_ID}.signin.aws.amazon.com/console
-                    </a>
-                </div>
-                <div class="info-item">
-                    <strong>Senha:</strong> 
-                    <a href="${SECRET_CONSOLE_URL}" target="_blank">Ver no Secrets Manager</a>
-                    <br><small>Secret Name: ${SECRET_NAME}</small>
-                </div>
-            </div>
+            echo "            <p>Gerado em: $(date '+%d/%m/%Y às %H:%M:%S')</p>"
+            echo "        </div>"
+            echo "        <div class=\"content\">"
             
-            <div class="info-section">
-                <h2>🔑 Chave SSH</h2>
-                <div class="info-item">
-                    <strong>Nome:</strong> $KEY_FILE<br>
-                    <strong>Download:</strong> ${SSH_KEY_LINK}
-                </div>
-                <div class="info-item">
-                    <strong>⚠️ Importante:</strong> Após baixar, execute: <code>chmod 400 $KEY_FILE</code>
-                </div>
-            </div>
-HTML_GENERAL
-        
-        # Adicionar informação da chave SSH com link do S3
-        if [ -f ".ssh-key-info" ]; then
-            source .ssh-key-info
-            S3_KEY_CONSOLE_URL="https://s3.console.aws.amazon.com/s3/object/${S3_BUCKET}?region=${REGION}&prefix=${S3_KEY_PATH}"
+            # Aviso sobre senha
+            echo "            <div class=\"warning-box\">"
+            echo "                <h3>🔐 Informação Importante sobre Senhas</h3>"
+            echo "                <p>A senha do console AWS está armazenada no <strong>AWS Secrets Manager</strong> e será fornecida pelo instrutor.</p>"
+            echo "                <p>Por questões de segurança, a senha <strong>NÃO</strong> está incluída neste documento.</p>"
+            echo "            </div>"
             
-            cat >> $HTML_FILE << HTML_SSH_KEY
-            <div class="info-section">
-                <h2>🔑 Chave SSH</h2>
-                <div class="info-item">
-                    <strong>Nome do Arquivo:</strong> $KEY_FILE
-                </div>
-                <div class="info-item">
-                    <strong>Bucket S3:</strong> ${S3_BUCKET}
-                </div>
-                <div class="info-item">
-                    <strong>Download via Console:</strong><br>
-                    <a href="${S3_KEY_CONSOLE_URL}" target="_blank">${S3_KEY_CONSOLE_URL}</a>
-                </div>
-                <div class="info-item">
-                    <strong>Download via AWS CLI:</strong>
-                    <div class="code-block">aws s3 cp s3://${S3_BUCKET}/${S3_KEY_PATH} ${KEY_FILE}<br>chmod 400 ${KEY_FILE}</div>
-                </div>
-            </div>
-HTML_SSH_KEY
-        fi
-        
-        # Obter outputs do CloudFormation e gerar cards para cada aluno
-        echo "            <h2 style=\"color: #667eea; margin: 30px 0 20px 0;\">👨‍🎓 Informações dos Alunos</h2>" >> $HTML_FILE
-        
-        for i in $(seq 1 $NUM_ALUNOS); do
-            ALUNO_NUM=$(printf "%02d" $i)
+            # Informações gerais
+            echo "            <div class=\"info-section\">"
+            echo "                <h2>📋 Informações Gerais</h2>"
+            echo "                <div class=\"info-item\"><strong>Stack Name:</strong> $STACK_NAME</div>"
+            echo "                <div class=\"info-item\"><strong>Região AWS:</strong> $REGION</div>"
+            echo "                <div class=\"info-item\"><strong>Account ID:</strong> $ACCOUNT_ID</div>"
+            echo "                <div class=\"info-item\"><strong>Número de Alunos:</strong> $NUM_ALUNOS</div>"
+            echo "            </div>"
             
-            # Obter IP da instância diretamente
-            INSTANCE_ID=$(aws ec2 describe-instances \
-                --filters "Name=tag:Name,Values=${PREFIXO_ALUNO}${ALUNO_NUM}-instance" \
-                          "Name=instance-state-name,Values=running" \
-                --query 'Reservations[0].Instances[0].InstanceId' \
-                --output text 2>/dev/null)
+            # Console AWS
+            echo "            <div class=\"info-section\">"
+            echo "                <h2>🌐 Acesso ao Console AWS</h2>"
+            echo "                <div class=\"info-item\">"
+            echo "                    <strong>URL de Login:</strong> "
+            echo "                    <a href=\"https://${ACCOUNT_ID}.signin.aws.amazon.com/console\" target=\"_blank\">"
+            echo "                        https://${ACCOUNT_ID}.signin.aws.amazon.com/console"
+            echo "                    </a>"
+            echo "                </div>"
+            echo "                <div class=\"info-item\">"
+            echo "                    <strong>Padrão de Usuário:</strong> ${STACK_NAME}-${PREFIXO_ALUNO}XX (onde XX = 01, 02, 03...)"
+            echo "                </div>"
+            echo "                <div class=\"info-item\">"
+            echo "                    <strong>Senha:</strong> <span class=\"badge badge-warning\">Será fornecida pelo instrutor</span>"
+            echo "                </div>"
+            echo "            </div>"
             
-            if [ "$INSTANCE_ID" != "None" ] && [ ! -z "$INSTANCE_ID" ]; then
-                IP=$(aws ec2 describe-instances \
-                    --instance-ids $INSTANCE_ID \
-                    --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            # Chave SSH
+            if [ -f ".ssh-key-info" ]; then
+                source .ssh-key-info
+                echo "            <div class=\"info-section\">"
+                echo "                <h2>🔑 Chave SSH</h2>"
+                echo "                <div class=\"info-item\">"
+                echo "                    <strong>Nome do Arquivo:</strong> $KEY_FILE"
+                echo "                </div>"
+                echo "                <div class=\"info-item\">"
+                echo "                    <strong>Download via Console S3:</strong><br>"
+                echo "                    <a href=\"https://s3.console.aws.amazon.com/s3/object/${S3_BUCKET}?region=${REGION}&prefix=${S3_KEY_PATH}\" target=\"_blank\">"
+                echo "                        Clique aqui para baixar no Console AWS"
+                echo "                    </a>"
+                echo "                </div>"
+                echo "                <div class=\"info-item\">"
+                echo "                    <strong>Download via AWS CLI:</strong>"
+                echo "                    <div class=\"code-block\">aws s3 cp s3://${S3_BUCKET}/${S3_KEY_PATH} ${KEY_FILE}<br>chmod 400 ${KEY_FILE}</div>"
+                echo "                </div>"
+                echo "            </div>"
+            else
+                echo "            <div class=\"info-section\">"
+                echo "                <h2>🔑 Chave SSH</h2>"
+                echo "                <div class=\"info-item\">"
+                echo "                    <strong>Nome do Arquivo:</strong> $KEY_FILE"
+                echo "                </div>"
+                echo "                <div class=\"info-item\">"
+                echo "                    <strong>Localização:</strong> Arquivo local - será distribuído pelo instrutor"
+                echo "                </div>"
+                echo "            </div>"
+            fi
+            
+            # Alunos em grid
+            echo "            <h2 style=\"color: #667eea; margin: 30px 0 20px 0; font-size: 2em;\">👨‍🎓 Informações dos Alunos</h2>"
+            echo "            <div class=\"grid\">"
+            
+            # Gerar cards dos alunos
+            for i in $(seq 1 $NUM_ALUNOS); do
+                ALUNO_NUM=$(printf "%02d" $i)
+                
+                # Obter IP da instância
+                INSTANCE_IP=$(aws cloudformation describe-stacks \
+                    --stack-name $STACK_NAME \
+                    --query "Stacks[0].Outputs[?OutputKey=='Aluno${ALUNO_NUM}IP'].OutputValue" \
                     --output text 2>/dev/null)
                 
-                USUARIO_IAM="${STACK_NAME}-${PREFIXO_ALUNO}${ALUNO_NUM}"
-                USUARIO_LINUX="${PREFIXO_ALUNO}${ALUNO_NUM}"
-                
-                cat >> $HTML_FILE << HTML_ALUNO
-            <div class="aluno-card">
-                <h3>👤 Aluno ${ALUNO_NUM} - ${PREFIXO_ALUNO}${ALUNO_NUM}</h3>
-                
-                <div class="info-item">
-                    <span class="badge">Console AWS</span>
-                    <strong>Usuário IAM:</strong> $USUARIO_IAM
-                </div>
-                
-                <div class="info-item">
-                    <span class="badge">EC2</span>
-                    <strong>IP Público:</strong> $IP<br>
-                    <strong>Usuário Linux:</strong> $USUARIO_LINUX<br>
-                    <strong>Instance ID:</strong> $INSTANCE_ID
-                </div>
-                
-                <div class="info-item">
-                    <strong>🔑 Comando SSH:</strong>
-                    <div class="code-block">ssh -i $KEY_FILE ${USUARIO_LINUX}@${IP}</div>
-                </div>
-            </div>
-HTML_ALUNO
-            fi
-        done
-        
-        # Footer
-        cat >> $HTML_FILE << 'HTML_FOOTER'
-        </div>
-        <div class="footer">
-            <p>📚 Curso DocumentDB - DevWizardsOps</p>
-            <p>Para mais informações, consulte a documentação do curso</p>
-        </div>
-    </div>
-</body>
-</html>
-HTML_FOOTER
+                if [ "$INSTANCE_IP" != "None" ] && [ ! -z "$INSTANCE_IP" ]; then
+                    USUARIO_IAM="${STACK_NAME}-${PREFIXO_ALUNO}${ALUNO_NUM}"
+                    USUARIO_LINUX="${PREFIXO_ALUNO}${ALUNO_NUM}"
+                    
+                    echo "                <div class=\"aluno-card\">"
+                    echo "                    <h3>👤 Aluno ${i} - ${USUARIO_LINUX}</h3>"
+                    echo "                    <div class=\"info-item\">"
+                    echo "                        <span class=\"badge\">Console AWS</span><br>"
+                    echo "                        <strong>Usuário IAM:</strong> $USUARIO_IAM"
+                    echo "                    </div>"
+                    echo "                    <div class=\"info-item\">"
+                    echo "                        <span class=\"badge\">Instância EC2</span><br>"
+                    echo "                        <strong>IP Público:</strong> <code>$INSTANCE_IP</code>"
+                    echo "                    </div>"
+                    echo "                    <div class=\"info-item\">"
+                    echo "                        <span class=\"badge\">Usuário Linux:</span><br>"
+                    echo "                        <strong>Username:</strong> $USUARIO_LINUX"
+                    echo "                    </div>"
+                    echo "                    <div class=\"info-item\">"
+                    echo "                        <strong>Comando SSH:</strong>"
+                    echo "                        <div class=\"code-block\">ssh -i $KEY_FILE ${USUARIO_LINUX}@${INSTANCE_IP}</div>"
+                    echo "                    </div>"
+                    echo "                    <div class=\"info-item\">"
+                    echo "                        <strong>SSH Alternativo (via ec2-user):</strong>"
+                    echo "                        <div class=\"code-block\">ssh -i $KEY_FILE ec2-user@${INSTANCE_IP}<br>sudo su - ${USUARIO_LINUX}</div>"
+                    echo "                    </div>"
+                    echo "                </div>"
+                fi
+            done
+            
+            echo "            </div>"
+            
+            # Instruções adicionais
+            echo "            <div class=\"info-section\" style=\"margin-top: 30px;\">"
+            echo "                <h2>📚 Instruções Importantes</h2>"
+            echo "                <div class=\"info-item\">"
+            echo "                    <strong>1. Primeiro Acesso:</strong> Faça login no console AWS com seu usuário e a senha fornecida pelo instrutor."
+            echo "                </div>"
+            echo "                <div class=\"info-item\">"
+            echo "                    <strong>2. Chave SSH:</strong> Baixe a chave SSH e configure as permissões corretas (chmod 400)."
+            echo "                </div>"
+            echo "                <div class=\"info-item\">"
+            echo "                    <strong>3. Conexão EC2:</strong> Use o comando SSH fornecido para conectar à sua instância."
+            echo "                </div>"
+            echo "                <div class=\"info-item\">"
+            echo "                    <strong>4. Ambiente Configurado:</strong> Todas as ferramentas (AWS CLI, MongoDB Shell, Node.js, etc.) já estão instaladas."
+            echo "                </div>"
+            echo "            </div>"
+            
+            # Footer
+            echo "        </div>"
+            echo "        <div class=\"footer\">"
+            echo "            <p><strong>📚 Curso DocumentDB - Extractta</strong></p>"
+            echo "            <p>Para dúvidas ou problemas, entre em contato com o instrutor</p>"
+            echo "            <p style=\"margin-top: 10px; font-size: 0.9em; color: #999;\">Documento gerado automaticamente - Não compartilhe com terceiros</p>"
+            echo "        </div>"
+            echo "    </div>"
+            echo "</body>"
+            echo "</html>"
+            
+        } > "$HTML_FILE"
         
         success "Relatório HTML gerado: $HTML_FILE"
         
